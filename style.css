@@ -1,0 +1,234 @@
+/* style.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background: #f4f7fc;
+    color: #1e293b;
+    padding: 20px;
+}
+
+.app-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 16px 28px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+header h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #0f3b5e;
+}
+
+nav {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.nav-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 40px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+    color: #475569;
+    transition: 0.2s;
+}
+
+.nav-btn:hover {
+    background: #eef2f6;
+}
+
+.nav-btn.active {
+    background: #0f3b5e;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+    animation: fade 0.25s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fade {
+    from { opacity: 0.4; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+
+.card h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 18px;
+    color: #0f3b5e;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.form-grid input, .form-grid select, .form-grid textarea {
+    padding: 10px 14px;
+    border: 1px solid #dce1e8;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    background: #fafcff;
+    transition: 0.2s;
+    width: 100%;
+}
+
+.form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
+    outline: none;
+    border-color: #0f3b5e;
+    box-shadow: 0 0 0 3px rgba(15, 59, 94, 0.15);
+}
+
+.upload-area {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.upload-area label {
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: #0f3b5e;
+    color: white;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 40px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 0.95rem;
+    margin-top: 6px;
+}
+
+.btn-primary:hover {
+    background: #1a4f74;
+    transform: scale(1.02);
+}
+
+.table-responsive {
+    overflow-x: auto;
+    margin-top: 6px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 10px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+td {
+    padding: 10px 10px;
+    border-bottom: 1px solid #e9edf2;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 18px 10px;
+}
+
+.stat-card h3 {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.stat-card span {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #0f3b5e;
+}
+
+.chart-card {
+    padding: 20px;
+}
+
+.chart-card canvas {
+    max-height: 250px;
+    max-width: 100%;
+}
+
+.filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.filter-group select, .filter-group input {
+    padding: 10px 14px;
+    border: 1px solid #dce1e8;
+    border-radius: 12px;
+    background: #fafcff;
+}
+
+.relatorio-preview {
+    margin-top: 20px;
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+@media (max-width: 700px) {
+    header { flex-direction: column; align-items: stretch; }
+    .form-grid { grid-template-columns: 1fr; }
+    .dashboard-grid { grid-template-columns: 1fr 1fr; }
+}

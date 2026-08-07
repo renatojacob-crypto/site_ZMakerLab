@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZMaker Manager</title>
+    <!-- CSS próprio -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>🚀 ZMaker Manager</h1>
+            <nav>
+                <button class="nav-btn active" data-tab="escolas">🏫 Escolas</button>
+                <button class="nav-btn" data-tab="agendamentos">📅 Agendamentos</button>
+                <button class="nav-btn" data-tab="acoes">📝 Ações</button>
+                <button class="nav-btn" data-tab="dashboard">📊 Dashboard</button>
+                <button class="nav-btn" data-tab="relatorios">📄 Relatórios</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Aba ESCOLAS -->
+            <section id="tab-escolas" class="tab-content active">
+                <div class="card">
+                    <h2>Cadastro de Escola</h2>
+                    <form id="form-escola">
+                        <div class="form-grid">
+                            <input type="text" id="escola-cnpj" placeholder="CNPJ" required>
+                            <input type="text" id="escola-razao" placeholder="Razão Social" required>
+                            <input type="text" id="escola-fantasia" placeholder="Nome Fantasia" required>
+                            <input type="text" id="escola-endereco" placeholder="Endereço">
+                            <input type="text" id="escola-complemento" placeholder="Complemento">
+                            <input type="text" id="escola-bairro" placeholder="Bairro">
+                            <input type="text" id="escola-cidade" placeholder="Cidade">
+                            <input type="text" id="escola-uf" placeholder="UF" maxlength="2">
+                            <input type="text" id="escola-cpf" placeholder="CPF Responsável">
+                            <select id="escola-tipo-zmaker">
+                                <option value="Full">ZMaker Lab Full</option>
+                                <option value="Start">ZMaker Lab Start</option>
+                            </select>
+                            <select id="escola-origem">
+                                <option value="Comercial">Comercial</option>
+                                <option value="Gestão Educacional">Gestão Educacional</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                            <select id="escola-bonificacao">
+                                <option value="Bonificação">Bonificação</option>
+                                <option value="Venda">Venda</option>
+                            </select>
+                            <input type="text" id="escola-contato-nome" placeholder="Nome do Contato" required>
+                            <input type="text" id="escola-contato-cargo" placeholder="Cargo">
+                            <input type="email" id="escola-contato-email" placeholder="E-mail do Contato">
+                            <input type="tel" id="escola-contato-telefone" placeholder="Telefone">
+                        </div>
+                        <button type="submit" class="btn-primary">Salvar Escola</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>Escolas Cadastradas</h2>
+                    <div id="lista-escolas" class="table-responsive"></div>
+                </div>
+            </section>
+
+            <!-- Aba AGENDAMENTOS -->
+            <section id="tab-agendamentos" class="tab-content">
+                <div class="card">
+                    <h2>Novo Agendamento</h2>
+                    <form id="form-agendamento">
+                        <div class="form-grid">
+                            <select id="agendamento-escola" required></select>
+                            <select id="agendamento-tipo-evento" required>
+                                <option value="Formação Inicial/Continuada">Formação Inicial/Continuada</option>
+                                <option value="Montagem de Equipamentos">Montagem de Equipamentos</option>
+                                <option value="Reunião de Implementação">Reunião de Implementação</option>
+                                <option value="Reunião de Boas Vindas">Reunião de Boas Vindas</option>
+                                <option value="Reunião de Manutenção">Reunião de Manutenção</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                            <input type="date" id="agendamento-data" required>
+                            <input type="time" id="agendamento-hora" required>
+                            <input type="text" id="agendamento-contato-nome" placeholder="Nome do Contato (opcional)">
+                            <input type="text" id="agendamento-contato-cargo" placeholder="Cargo (opcional)">
+                            <input type="email" id="agendamento-contato-email" placeholder="E-mail (opcional)">
+                            <input type="tel" id="agendamento-contato-telefone" placeholder="Telefone (opcional)">
+                        </div>
+                        <button type="submit" class="btn-primary">Criar Agendamento</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>Agendamentos</h2>
+                    <div id="lista-agendamentos" class="table-responsive"></div>
+                </div>
+            </section>
+
+            <!-- Aba AÇÕES -->
+            <section id="tab-acoes" class="tab-content">
+                <div class="card">
+                    <h2>Registrar Ação Realizada</h2>
+                    <form id="form-acao">
+                        <div class="form-grid">
+                            <select id="acao-agendamento" required></select>
+                            <select id="acao-tipo" required>
+                                <option value="Remota">Remota</option>
+                                <option value="Presencial">Presencial</option>
+                            </select>
+                            <select id="acao-responsavel" required>
+                                <option value="Comercial">Comercial</option>
+                                <option value="Orientador">Orientador</option>
+                                <option value="Equipe ZMaker">Equipe ZMaker</option>
+                            </select>
+                            <input type="text" id="acao-resp-nome" placeholder="Nome do Responsável" required>
+                            <input type="email" id="acao-resp-email" placeholder="E-mail do Responsável" required>
+                            <input type="tel" id="acao-resp-telefone" placeholder="Telefone do Responsável" required>
+                            <textarea id="acao-descricao" placeholder="Descrição da ação realizada..." rows="3"></textarea>
+                            <div class="upload-area">
+                                <label>Fotos (até 5):</label>
+                                <input type="file" id="acao-fotos" accept="image/*" multiple>
+                                <span id="foto-count">0 arquivo(s)</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary">Registrar Ação</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>Ações Registradas</h2>
+                    <div id="lista-acoes" class="table-responsive"></div>
+                </div>
+            </section>
+
+            <!-- Aba DASHBOARD -->
+            <section id="tab-dashboard" class="tab-content">
+                <div class="card dashboard-filters">
+                    <h2>Filtros do Dashboard</h2>
+                    <div class="filter-group">
+                        <select id="dashboard-escola"><option value="">Todas as Escolas</option></select>
+                        <input type="date" id="dashboard-data-inicio">
+                        <input type="date" id="dashboard-data-fim">
+                        <button id="aplicar-filtros-dash" class="btn-primary">Aplicar Filtros</button>
+                    </div>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="card stat-card">
+                        <h3>Total de Ações</h3>
+                        <span id="total-acoes">0</span>
+                    </div>
+                    <div class="card stat-card">
+                        <h3>Formação Inicial/Cont.</h3>
+                        <span id="total-formacao">0</span>
+                    </div>
+                    <div class="card stat-card">
+                        <h3>Montagem de Equip.</h3>
+                        <span id="total-montagem">0</span>
+                    </div>
+                    <div class="card stat-card">
+                        <h3>Reuniões</h3>
+                        <span id="total-reunioes">0</span>
+                    </div>
+                </div>
+                <div class="card chart-card">
+                    <h3>Ações por Tipo</h3>
+                    <canvas id="chart-acoes-tipo"></canvas>
+                </div>
+                <div class="card chart-card">
+                    <h3>Ações por Escola</h3>
+                    <canvas id="chart-acoes-escola"></canvas>
+                </div>
+            </section>
+
+            <!-- Aba RELATÓRIOS -->
+            <section id="tab-relatorios" class="tab-content">
+                <div class="card">
+                    <h2>Gerar Relatório</h2>
+                    <div class="filter-group">
+                        <select id="relatorio-escola"><option value="">Todas as Escolas</option></select>
+                        <input type="date" id="relatorio-data-inicio">
+                        <input type="date" id="relatorio-data-fim">
+                        <button id="gerar-relatorio" class="btn-primary">Gerar PDF</button>
+                    </div>
+                    <div id="preview-relatorio" class="relatorio-preview"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- JavaScript próprio -->
+    <script src="app.js"></script>
+</body>
+</html>
