@@ -9,3 +9,12 @@ URL API - Criar Agendamentos - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.
 URL API - Criar Ação - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/12/workflows/52b6af4c67e9414181fa67d5790f5e1e/triggers/manual/paths/invoke/api/acoes?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iKV0M_6AvGsmRvHhgagr4dygDJnlOxrnWbIE-Ncx_08
 
 URL Gerar Relatório PDF - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/15/workflows/e4e666c3f12e40e3a4c80fc3ad21a37a/triggers/manual/paths/invoke/gerar_relatorio?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xycg3o9PQwJ3ixkVY1_V_iO83_7sf5Ac88T4SeEFvwc
+
+
+
+Expressões powerautomate
+
+Pegar a data: formatDateTime(utcNow(), 'dd/MM/yyyy')
+
+
+pegar a hora: formatDateTime(utcNow(), 'HH:mm')

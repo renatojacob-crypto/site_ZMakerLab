@@ -1,12 +1,22 @@
 // ====== CARREGAR CONFIGURAÇÃO ======
 const API = window.API_CONFIG;
 
+// ====== FUNÇÕES DE LOADING ======
+function showLoading() {
+    document.getElementById('loading-overlay').classList.add('active');
+}
+
+function hideLoading() {
+    document.getElementById('loading-overlay').classList.remove('active');
+}
+
 // ====== FUNÇÃO PARA FAZER REQUISIÇÕES ======
 async function callAPI(url, method = 'GET', data = null) {
     const options = {
         method: method,
         headers: {
             'Content-Type': 'application/json',
+            'Prefer': 'respond-async=false'
         },
     };
     if (data && (method === 'POST' || method === 'PUT')) {
@@ -14,49 +24,138 @@ async function callAPI(url, method = 'GET', data = null) {
     }
 
     const response = await fetch(url, options);
-    if (!response.ok) {
-        throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+
+    if (response.status === 202) {
+        return { success: true, async: true, status: 202 };
     }
-    return response;
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+        return await response.json();
+    } else {
+        const text = await response.text();
+        if (!text) return { success: true };
+        try {
+            return JSON.parse(text);
+        } catch {
+            return { success: true, message: text };
+        }
+    }
 }
 
-// ====== FUNÇÕES DE CRUD (usando URLs específicas) ======
+// ====== FUNÇÕES DE CRUD ======
 async function getEscolas() {
     const response = await callAPI(API.getEscolas, 'GET');
-    return await response.json();
+    return response.value || response;
 }
 
 async function createEscola(dados) {
-    const response = await callAPI(API.postEscola, 'POST', dados);
-    return await response.json();
+    return await callAPI(API.postEscola, 'POST', dados);
 }
 
 async function getAgendamentos() {
     const response = await callAPI(API.getAgendamentos, 'GET');
-    return await response.json();
+    return response.value || response;
 }
 
 async function createAgendamento(dados) {
-    const response = await callAPI(API.postAgendamento, 'POST', dados);
-    return await response.json();
+    return await callAPI(API.postAgendamento, 'POST', dados);
 }
 
 async function getAcoes() {
     const response = await callAPI(API.getAcoes, 'GET');
-    return await response.json();
+    return response.value || response;
 }
 
 async function createAcao(dados) {
-    const response = await callAPI(API.postAcao, 'POST', dados);
-    return await response.json();
+    return await callAPI(API.postAcao, 'POST', dados);
 }
 
 async function gerarRelatorio(filtros) {
-    const response = await callAPI(API.postRelatorio, 'POST', filtros);
-    return response; // Retorna a resposta completa (para blob)
+    const url = API.postRelatorio;
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Prefer': 'respond-async=false'
+        },
+        body: JSON.stringify(filtros)
+    };
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        throw new Error(`Erro ao gerar relatório: ${response.status}`);
+    }
+    return response;
 }
 
-// ====== FUNÇÃO PARA BUSCAR CEP (VIA CEP API) ======
+// ====== CONVERSÃO DE DATA DO EXCEL ======
+function excelDateToDate(serial) {
+    if (serial === undefined || serial === null || serial === '') return '';
+    
+    let val = String(serial).trim();
+    
+    if (val.includes('/')) return val.split(' ')[0]; 
+    
+    if (val.includes('-')) {
+        const partes = val.split('T')[0].split('-');
+        if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        return val;
+    }
+    
+    if (!isNaN(Number(val))) {
+        const epoch = new Date(1899, 11, 30);
+        const date = new Date(epoch.getTime() + (Number(val) * 86400000));
+        if (isNaN(date.getTime())) return val;
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+    
+    return val;
+}
+
+function excelTimeToTime(serial) {
+    if (serial === undefined || serial === null || serial === '') return '';
+    
+    let val = String(serial).trim();
+    
+    if (val.includes(':')) {
+        return val.substring(0, 5); 
+    }
+    
+    val = val.replace(',', '.');
+    
+    if (!isNaN(Number(val))) {
+        const totalSeconds = Math.round(Number(val) * 86400);
+        const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+        return `${hours}:${minutes}`;
+    }
+    
+    return val;
+}
+
+function formatExcelDateTime(dateVal, timeVal) {
+    const dataFormatada = excelDateToDate(dateVal);
+    const horaFormatada = excelTimeToTime(timeVal);
+
+    if (dataFormatada && horaFormatada) {
+        return `${dataFormatada} às ${horaFormatada}`;
+    } else if (dataFormatada) {
+        return dataFormatada;
+    } else if (horaFormatada) {
+        return horaFormatada;
+    }
+    return '';
+}
+
+// ====== CEP ======
 async function buscarCEP(cep) {
     try {
         cep = cep.replace(/\D/g, '');
@@ -87,7 +186,6 @@ async function buscarCEP(cep) {
     }
 }
 
-// ====== AUTO PREENCHER ENDEREÇO ======
 async function preencherEndereco(cep) {
     const dados = await buscarCEP(cep);
     if (!dados) return;
@@ -98,7 +196,6 @@ async function preencherEndereco(cep) {
     document.getElementById('escola-complemento').focus();
 }
 
-// ====== EVENTOS DO CEP ======
 document.getElementById('buscar-cep').addEventListener('click', () => {
     const cep = document.getElementById('escola-cep').value;
     preencherEndereco(cep);
@@ -115,6 +212,14 @@ document.getElementById('escola-cep').addEventListener('input', function() {
     }
 });
 
+// ====== BANCO DE DADOS LOCAL ======
+const DB = {
+    escolas: [],
+    agendamentos: [],
+    acoes: [],
+    _id: 1000 
+};
+
 // ====== INICIALIZAR DADOS (via API) ======
 async function initData() {
     try {
@@ -123,24 +228,39 @@ async function initData() {
             getAgendamentos(),
             getAcoes()
         ]);
-        DB.escolas = escolas || [];
-        DB.agendamentos = agendamentos || [];
-        DB.acoes = acoes || [];
-        console.log('Dados carregados da API.');
+        
+        DB.escolas = (Array.isArray(escolas) ? escolas : []).map((e, index) => {
+            let rawId = e.ID || e.id || e.Id || e.idEscola || (index + 1);
+            return { ...e, ID: String(rawId).trim() };
+        });
+
+        DB.agendamentos = (Array.isArray(agendamentos) ? agendamentos : []).map((a, index) => {
+            let rawId = a.ID || a.id || a.Id || (index + 1);
+            let escolaIdRef = a.EscolaID || a.escolaID || a.escolaId || '';
+            return {
+                ...a,
+                ID: String(rawId).trim(),
+                EscolaID: String(escolaIdRef).trim()
+            };
+        });
+
+        DB.acoes = (Array.isArray(acoes) ? acoes : []).map((a, index) => {
+            let rawId = a.ID || a.id || a.Id || (index + 1);
+            let agendamentoIdRef = a.AgendamentoID || a.agendamentoID || a.agendamentoId || '';
+            let escolaIdRef = a.EscolaID || a.escolaID || a.escolaId || '';
+            return {
+                ...a,
+                ID: String(rawId).trim(),
+                AgendamentoID: String(agendamentoIdRef).trim(),
+                EscolaID: String(escolaIdRef).trim()
+            };
+        });
+        
+        console.log('✅ Dados carregados da API do Excel.');
     } catch (error) {
-        console.error('Erro ao carregar dados da API:', error);
-        // Fallback para localStorage
-        if (localStorage.getItem('zmaker_db')) {
-            const saved = JSON.parse(localStorage.getItem('zmaker_db'));
-            DB.escolas = saved.escolas || [];
-            DB.agendamentos = saved.agendamentos || [];
-            DB.acoes = saved.acoes || [];
-            DB._id = saved._id || 1;
-            console.warn('Usando dados do localStorage (fallback).');
-        } else {
-            initMockData();
-        }
+        console.error('❌ Erro ao carregar dados da API:', error);
     }
+    
     atualizarSelects();
     renderEscolas();
     renderAgendamentos();
@@ -148,83 +268,48 @@ async function initData() {
     atualizarDashboard();
 }
 
-// ====== DADOS MOCK (fallback) ======
-function initMockData() {
-    DB.escolas = [{
-        id: 1,
-        cnpj: '12.345.678/0001-90',
-        razao: 'Escola Modelo Ltda',
-        fantasia: 'EM Modelo',
-        cep: '01001000',
-        endereco: 'Praça da Sé',
-        complemento: 'Sala 3',
-        bairro: 'Sé',
-        cidade: 'São Paulo',
-        uf: 'SP',
-        tipoZmaker: 'Full',
-        origem: 'Comercial',
-        bonificacao: 'Venda',
-        contatoNome: 'Carlos Silva',
-        contatoCargo: 'Diretor',
-        contatoEmail: 'carlos@escola.com',
-        contatoTelefone: '(11) 99999-9999'
-    }];
-    DB.agendamentos = [{
-        id: 1,
-        escolaId: 1,
-        tipoEvento: 'Formação Inicial/Continuada',
-        data: '2026-08-15',
-        hora: '14:00',
-        responsavel: 'Orientador',
-        respNome: 'João Oliveira',
-        respEmail: 'joao@zmaker.com',
-        respTelefone: '(11) 97777-7777',
-        contatoNome: 'Ana Beatriz',
-        contatoCargo: 'Coordenadora',
-        contatoEmail: 'ana@escola.com',
-        contatoTelefone: '(11) 98888-8888'
-    }];
-    DB.acoes = [{
-        id: 1,
-        agendamentoId: 1,
-        escolaId: 1,
-        tipo: 'Presencial',
-        descricao: 'Formação inicial com os professores.',
-        fotos: ['foto1.jpg', 'foto2.jpg'],
-        dataRegistro: '2026-08-16'
-    }];
-    DB._id = 3;
-    persistDB();
-}
-
-function persistDB() {
-    localStorage.setItem('zmaker_db', JSON.stringify(DB));
-}
-
 // ====== HELPERS ======
-const DB = {
-    escolas: [],
-    agendamentos: [],
-    acoes: [],
-    _id: 1
-};
-
 function getEscolaById(id) {
-    return DB.escolas.find(e => e.id === Number(id));
+    if (!id) return null;
+    const searchId = String(id).trim();
+    return DB.escolas.find(e => {
+        const eId = String(e.ID || e.id || '').trim();
+        return eId === searchId || eId.startsWith(searchId) || searchId.startsWith(eId);
+    });
 }
 
 function getAgendamentoById(id) {
-    return DB.agendamentos.find(a => a.id === Number(id));
+    if (!id) return null;
+    const searchId = String(id).trim();
+    return DB.agendamentos.find(a => {
+        const aId = String(a.ID || a.id || '').trim();
+        return aId === searchId || aId.startsWith(searchId) || searchId.startsWith(aId);
+    });
 }
 
 function getEscolasOptions() {
-    return DB.escolas.map(e => `<option value="${e.id}">${e.fantasia} (${e.cidade})</option>`).join('');
+    let optionsHtml = '<option value="">Selecione uma escola...</option>';
+    
+    if (!DB.escolas || !DB.escolas.length) {
+        return '<option value="">Nenhuma escola cadastrada</option>';
+    }
+    
+    const listaHtml = DB.escolas.map((e, index) => {
+        let id = e.ID || e.id || (index + 1);
+        const nome = e.NomeFantasia || e.fantasia || e.nomeFantasia || e.RazaoSocial || e.razao || 'Escola sem nome';
+        const cidade = e.Cidade || e.cidade || 'Sem cidade';
+        
+        return `<option value="${id}">${nome} (${cidade})</option>`;
+    }).join('');
+    
+    return optionsHtml + listaHtml;
 }
 
+// ====== RENDERIZAÇÃO ======
 function renderEscolas() {
     const container = document.getElementById('lista-escolas');
     if (!DB.escolas.length) {
-        container.innerHTML = '<p>Nenhuma escola cadastrada.</p>';
+        container.innerHTML = '<p>Nenhuma escola encontrada no Excel.</p>';
         return;
     }
     let html = `<table><thead><tr>
@@ -234,14 +319,14 @@ function renderEscolas() {
     </tr></thead><tbody>`;
     DB.escolas.forEach(e => {
         html += `<tr>
-            <td>${e.cnpj}</td>
-            <td>${e.razao}</td>
-            <td>${e.fantasia}</td>
-            <td>${e.endereco}, ${e.cep}</td>
-            <td>${e.bairro}</td>
-            <td>${e.cidade}/${e.uf}</td>
-            <td>${e.contatoNome}</td>
-            <td>${e.tipoZmaker}</td>
+            <td>${e.CNPJ || e.cnpj || ''}</td>
+            <td>${e.RazaoSocial || e.razao || e.razaoSocial || ''}</td>
+            <td>${e.NomeFantasia || e.fantasia || e.nomeFantasia || ''}</td>
+            <td>${e.Endereco || e.endereco || ''}, ${e.CEP || e.cep || ''}</td>
+            <td>${e.Bairro || e.bairro || ''}</td>
+            <td>${e.Cidade || e.cidade || ''}/${e.UF || e.uf || ''}</td>
+            <td>${e.ContatoNome || e.contatoNome || ''}</td>
+            <td>${e.TipoZMaker || e.tipoZmaker || e.tipoZMaker || ''}</td>
         </tr>`;
     });
     html += '</tbody></table>';
@@ -251,25 +336,33 @@ function renderEscolas() {
 function renderAgendamentos() {
     const container = document.getElementById('lista-agendamentos');
     if (!DB.agendamentos.length) {
-        container.innerHTML = '<p>Nenhum agendamento.</p>';
+        container.innerHTML = '<p>Nenhum agendamento encontrado no Excel.</p>';
         return;
     }
+    
     let html = `<table><thead><tr>
         <th>Escola</th><th>Tipo</th><th>Data/Hora</th>
         <th>Responsável</th><th>Contato</th><th>Ações</th>
     </tr></thead><tbody>`;
+    
     DB.agendamentos.forEach(a => {
-        const escola = getEscolaById(a.escolaId);
-        const nomeEscola = escola ? escola.fantasia : 'N/E';
+        const escolaId = a.EscolaID || a.escolaID || a.escolaId;
+        const escola = getEscolaById(escolaId);
+        const nomeEscola = escola ? (escola.NomeFantasia || escola.fantasia || escola.RazaoSocial || 'N/E') : 'N/E';
+        
+        let dataHora = formatExcelDateTime(a.Data, a.Hora);
+        const agendamentoId = a.ID || a.id;
+        
         html += `<tr>
             <td>${nomeEscola}</td>
-            <td>${a.tipoEvento}</td>
-            <td>${a.data} ${a.hora}</td>
-            <td>${a.responsavel} - ${a.respNome}</td>
-            <td>${a.contatoNome || '—'}</td>
-            <td><button class="btn-primary" style="padding:4px 12px;font-size:0.8rem;" onclick="carregarAcaoParaAgendamento(${a.id})">Registrar Ação</button></td>
+            <td>${a.TipoEvento || a.tipoEvento || ''}</td>
+            <td>${dataHora}</td>
+            <td>${a.Responsavel || a.responsavel || ''} - ${a.RespNome || a.respNome || ''}</td>
+            <td>${a.ContatoNome || a.contatoNome || '—'}</td>
+            <td><button class="btn-primary" style="padding:4px 12px;font-size:0.8rem;" onclick="carregarAcaoParaAgendamento('${agendamentoId}')">Registrar Ação</button></td>
         </tr>`;
     });
+    
     html += '</tbody></table>';
     container.innerHTML = html;
 }
@@ -277,32 +370,43 @@ function renderAgendamentos() {
 function renderAcoes() {
     const container = document.getElementById('lista-acoes');
     if (!DB.acoes.length) {
-        container.innerHTML = '<p>Nenhuma ação registrada.</p>';
+        container.innerHTML = '<p>Nenhuma ação registrada no Excel.</p>';
         return;
     }
     let html = `<table><thead><tr>
         <th>Escola</th><th>Tipo</th><th>Responsável</th><th>Data</th><th>Descrição</th><th>Fotos</th>
     </tr></thead><tbody>`;
     DB.acoes.forEach(ac => {
-        const agendamento = getAgendamentoById(ac.agendamentoId);
-        const escola = getEscolaById(ac.escolaId);
-        const nomeEscola = escola ? escola.fantasia : 'N/E';
-        const responsavel = agendamento ? `${agendamento.responsavel} - ${agendamento.respNome}` : 'N/I';
+        const agendamentoId = ac.AgendamentoID || ac.agendamentoID || ac.agendamentoId;
+        const escolaId = ac.EscolaID || ac.escolaID || ac.escolaId;
+        const agendamento = getAgendamentoById(agendamentoId);
+        const escola = getEscolaById(escolaId);
+        
+        const nomeEscola = escola ? (escola.NomeFantasia || escola.fantasia || 'N/E') : 'N/E';
+        const responsavel = agendamento ? `${agendamento.Responsavel || agendamento.responsavel} - ${agendamento.RespNome || agendamento.respNome}` : 'N/I';
+        
+        // Se Fotos vier como string do Excel (URLs separadas por vírgula) ou array
+        let qtdFotos = 0;
+        if (ac.Fotos) {
+            qtdFotos = Array.isArray(ac.Fotos) ? ac.Fotos.length : String(ac.Fotos).split(',').filter(f => f.trim() !== '').length;
+        } else if (ac.fotos) {
+            qtdFotos = Array.isArray(ac.fotos) ? ac.fotos.length : String(ac.fotos).split(',').filter(f => f.trim() !== '').length;
+        }
+        
         html += `<tr>
             <td>${nomeEscola}</td>
-            <td>${ac.tipo}</td>
+            <td>${ac.Tipo || ac.tipo || ''}</td>
             <td>${responsavel}</td>
-            <td>${ac.dataRegistro || '—'}</td>
-            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ac.descricao || '—'}</td>
-            <td>${ac.fotos ? ac.fotos.length : 0} foto(s)</td>
+            <td>${ac.DataRegistro || ac.dataRegistro || ''}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ac.Descricao || ac.descricao || ''}</td>
+            <td>${qtdFotos > 0 ? `<a href="#" onclick="alert('URLs salvas no Excel. Verifique a tabela original para os links.')" style="color:#0f3b5e;font-weight:bold;">${qtdFotos} foto(s)</a>` : '0 foto(s)'}</td>
         </tr>`;
     });
     html += '</tbody></table>';
     container.innerHTML = html;
 }
 
-// ====== FORMULÁRIOS (com chamadas à API) ======
-// Escola
+// ====== FORMULÁRIOS ======
 document.getElementById('form-escola').addEventListener('submit', async (e) => {
     e.preventDefault();
     const dados = {
@@ -323,91 +427,124 @@ document.getElementById('form-escola').addEventListener('submit', async (e) => {
         contatoEmail: document.getElementById('escola-contato-email').value,
         contatoTelefone: document.getElementById('escola-contato-telefone').value
     };
+
+    showLoading(); 
     try {
         await createEscola(dados);
-        await initData();
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await initData(); 
         document.getElementById('form-escola').reset();
-        alert('Escola salva!');
+        alert('Escola salva com sucesso!');
     } catch (error) {
         console.error(error);
-        alert('Erro ao salvar escola. Verifique a conexão com o Power Automate.');
-        // Fallback local
-        const nova = { id: DB._id++, ...dados };
-        DB.escolas.push(nova);
-        persistDB();
-        atualizarSelects();
-        renderEscolas();
-        alert('Escola salva localmente (fallback).');
+        alert('Erro ao salvar na nuvem. Verifique sua conexão.');
+    } finally {
+        hideLoading(); 
     }
 });
 
-// Agendamento
+// ====== FORMULÁRIO DE AGENDAMENTO ======
 document.getElementById('form-agendamento').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const escolaId = Number(document.getElementById('agendamento-escola').value);
-    if (!escolaId) { alert('Selecione uma escola.'); return; }
+    
+    const selectEscola = document.getElementById('agendamento-escola');
+    const escolaIdValue = selectEscola.value;
+    
+    if (!escolaIdValue || escolaIdValue === '') {
+        alert('Por favor, selecione uma escola válida no menu.');
+        return;
+    }
+    
+    const rawData = document.getElementById('agendamento-data').value; 
+    const rawHora = document.getElementById('agendamento-hora').value; 
+    
+    const dataLimpa = rawData ? rawData.split('T')[0] : '';
+    const horaLimpa = rawHora ? rawHora.substring(0, 5) : '';
+    
     const dados = {
-        escolaId: escolaId,
-        tipoEvento: document.getElementById('agendamento-tipo-evento').value,
-        data: document.getElementById('agendamento-data').value,
-        hora: document.getElementById('agendamento-hora').value,
-        responsavel: document.getElementById('agendamento-responsavel').value,
-        respNome: document.getElementById('agendamento-resp-nome').value,
-        respEmail: document.getElementById('agendamento-resp-email').value,
-        respTelefone: document.getElementById('agendamento-resp-telefone').value,
-        contatoNome: document.getElementById('agendamento-contato-nome').value,
-        contatoCargo: document.getElementById('agendamento-contato-cargo').value,
-        contatoEmail: document.getElementById('agendamento-contato-email').value,
-        contatoTelefone: document.getElementById('agendamento-contato-telefone').value
+        EscolaID: String(escolaIdValue).trim(), 
+        TipoEvento: document.getElementById('agendamento-tipo-evento').value,
+        Data: dataLimpa,
+        Hora: horaLimpa,
+        Responsavel: document.getElementById('agendamento-responsavel').value,
+        RespNome: document.getElementById('agendamento-resp-nome').value,
+        RespEmail: document.getElementById('agendamento-resp-email').value,
+        RespTelefone: document.getElementById('agendamento-resp-telefone').value,
+        ContatoNome: document.getElementById('agendamento-contato-nome').value,
+        ContatoCargo: document.getElementById('agendamento-contato-cargo').value,
+        ContatoEmail: document.getElementById('agendamento-contato-email').value,
+        ContatoTelefone: document.getElementById('agendamento-contato-telefone').value
     };
+
+    showLoading(); 
     try {
         await createAgendamento(dados);
-        await initData();
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await initData(); 
         document.getElementById('form-agendamento').reset();
-        alert('Agendamento criado!');
+        alert('Agendamento criado com sucesso!');
     } catch (error) {
-        console.error(error);
-        alert('Erro ao criar agendamento. Verifique a conexão.');
-        const novo = { id: DB._id++, ...dados };
-        DB.agendamentos.push(novo);
-        persistDB();
-        atualizarSelects();
-        renderAgendamentos();
-        alert('Agendamento salvo localmente (fallback).');
+        console.error('❌ Erro:', error);
+        alert('Erro de conexão ao salvar o agendamento.');
+    } finally {
+        hideLoading(); 
     }
 });
 
-// Ação
+// ====== FORMULÁRIO DE AÇÃO (COM ENVIO EM BASE64) ======
 document.getElementById('form-acao').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const agendamentoId = Number(document.getElementById('acao-agendamento').value);
-    const agendamento = getAgendamentoById(agendamentoId);
-    if (!agendamento) { alert('Selecione um agendamento válido.'); return; }
     
+    const agendamentoIdValue = document.getElementById('acao-agendamento').value;
+    const agendamento = getAgendamentoById(agendamentoIdValue);
+    
+    if (!agendamento) { 
+        alert('Selecione um agendamento válido.'); 
+        return; 
+    }
+
     const fotosInput = document.getElementById('acao-fotos');
-    const fotos = Array.from(fotosInput.files).map(f => f.name);
-    
-    const dados = {
-        agendamentoId: agendamentoId,
-        escolaId: agendamento.escolaId,
-        tipo: document.getElementById('acao-tipo').value,
-        descricao: document.getElementById('acao-descricao').value,
-        fotos: fotos
-    };
+    const escolaId = agendamento.EscolaID || agendamento.escolaID || agendamento.escolaId;
+
+    showLoading(); 
     try {
+        // Converte as fotos selecionadas para Base64
+        const filePromises = Array.from(fotosInput.files).map(file => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve({
+                    name: file.name,
+                    mimeType: file.type,
+                    // Pega apenas a string codificada em base64 e retira o prefixo "data:image/jpeg;base64,"
+                    contentBytes: reader.result.split(',')[1] 
+                });
+                reader.onerror = error => reject(error);
+            });
+        });
+
+        // Aguarda a conversão de todas as imagens
+        const fotosBase64 = await Promise.all(filePromises);
+
+        const dados = {
+            AgendamentoID: String(agendamentoIdValue).trim(),
+            EscolaID: String(escolaId).trim(),
+            Tipo: document.getElementById('acao-tipo').value,
+            Descricao: document.getElementById('acao-descricao').value,
+            Fotos: fotosBase64 // Agora envia o array de objetos com o arquivo decodificado
+        };
+
         await createAcao(dados);
+        await new Promise(resolve => setTimeout(resolve, 2000));
         await initData();
         document.getElementById('form-acao').reset();
         document.getElementById('foto-count').textContent = '0 arquivo(s)';
-        alert('Ação registrada!');
+        alert('Ação registrada com sucesso e imagens enviadas!');
     } catch (error) {
         console.error(error);
-        alert('Erro ao registrar ação. Verifique a conexão.');
-        const novaAcao = { id: DB._id++, ...dados, dataRegistro: new Date().toISOString().split('T')[0] };
-        DB.acoes.push(novaAcao);
-        persistDB();
-        renderAcoes();
-        alert('Ação salva localmente (fallback).');
+        alert('Erro de conexão ao registrar a ação. Verifique o Power Automate e a conversão de arquivos.');
+    } finally {
+        hideLoading(); 
     }
 });
 
@@ -418,20 +555,36 @@ function atualizarSelects() {
         const sel = document.getElementById(id);
         if (sel) {
             const currentVal = sel.value;
-            sel.innerHTML = '<option value="">Selecione</option>' + getEscolasOptions();
-            if (currentVal) sel.value = currentVal;
+            sel.innerHTML = getEscolasOptions();
+            
+            if (currentVal && currentVal !== '') {
+                const existe = Array.from(sel.options).some(opt => opt.value === currentVal);
+                if (existe) sel.value = currentVal;
+                else sel.value = "";
+            } else {
+                sel.value = "";
+            }
         }
     });
+    
     const selAcao = document.getElementById('acao-agendamento');
     if (selAcao) {
         const currentVal = selAcao.value;
-        selAcao.innerHTML = '<option value="">Selecione o agendamento</option>';
+        selAcao.innerHTML = '<option value="">Selecione o agendamento...</option>';
         DB.agendamentos.forEach(a => {
-            const escola = getEscolaById(a.escolaId);
-            const nome = escola ? escola.fantasia : 'N/E';
-            selAcao.innerHTML += `<option value="${a.id}">${nome} - ${a.tipoEvento} (${a.data}) - ${a.respNome}</option>`;
+            const escolaId = a.EscolaID || a.escolaID || a.escolaId;
+            const escola = getEscolaById(escolaId);
+            const nome = escola ? (escola.NomeFantasia || escola.fantasia || 'N/E') : 'N/E';
+            const idAg = a.ID || a.id;
+            
+            const exibicaoAgend = formatExcelDateTime(a.Data, a.Hora);
+            selAcao.innerHTML += `<option value="${idAg}">${nome} - ${a.TipoEvento || a.tipoEvento} (${exibicaoAgend})</option>`;
         });
-        if (currentVal) selAcao.value = currentVal;
+        
+        if (currentVal && currentVal !== '') {
+            const existe = Array.from(selAcao.options).some(opt => opt.value === currentVal);
+            if (existe) selAcao.value = currentVal;
+        }
     }
 }
 
@@ -452,50 +605,51 @@ function atualizarDashboard() {
     const escolaFiltro = document.getElementById('dashboard-escola').value;
     const dataInicio = document.getElementById('dashboard-data-inicio').value;
     const dataFim = document.getElementById('dashboard-data-fim').value;
-    
+
     let acoesFiltradas = [...DB.acoes];
     if (escolaFiltro) {
-        acoesFiltradas = acoesFiltradas.filter(a => a.escolaId === Number(escolaFiltro));
+        acoesFiltradas = acoesFiltradas.filter(a => String(a.EscolaID || a.escolaID || a.escolaId) === String(escolaFiltro));
     }
     if (dataInicio) {
-        acoesFiltradas = acoesFiltradas.filter(a => a.dataRegistro >= dataInicio);
+        acoesFiltradas = acoesFiltradas.filter(a => (a.DataRegistro || a.dataRegistro) >= dataInicio);
     }
     if (dataFim) {
-        acoesFiltradas = acoesFiltradas.filter(a => a.dataRegistro <= dataFim);
+        acoesFiltradas = acoesFiltradas.filter(a => (a.DataRegistro || a.dataRegistro) <= dataFim);
     }
-    
+
     document.getElementById('total-acoes').textContent = acoesFiltradas.length;
     const formacao = acoesFiltradas.filter(a => {
-        const ag = getAgendamentoById(a.agendamentoId);
-        return ag && ag.tipoEvento === 'Formação Inicial/Continuada';
+        const ag = getAgendamentoById(a.AgendamentoID || a.agendamentoID || a.agendamentoId);
+        return ag && (ag.TipoEvento || ag.tipoEvento) === 'Formação Inicial/Continuada';
     }).length;
     document.getElementById('total-formacao').textContent = formacao;
     const montagem = acoesFiltradas.filter(a => {
-        const ag = getAgendamentoById(a.agendamentoId);
-        return ag && ag.tipoEvento === 'Montagem de Equipamentos';
+        const ag = getAgendamentoById(a.AgendamentoID || a.agendamentoID || a.agendamentoId);
+        return ag && (ag.TipoEvento || ag.tipoEvento) === 'Montagem de Equipamentos';
     }).length;
     document.getElementById('total-montagem').textContent = montagem;
     const reunioes = acoesFiltradas.filter(a => {
-        const ag = getAgendamentoById(a.agendamentoId);
-        return ag && ag.tipoEvento && ag.tipoEvento.includes('Reunião');
+        const ag = getAgendamentoById(a.AgendamentoID || a.agendamentoID || a.agendamentoId);
+        const tipo = ag.TipoEvento || ag.tipoEvento;
+        return ag && tipo && tipo.includes('Reunião');
     }).length;
     document.getElementById('total-reunioes').textContent = reunioes;
-    
+
     const tipos = ['Remota', 'Presencial'];
-    const counts = tipos.map(t => acoesFiltradas.filter(a => a.tipo === t).length);
+    const counts = tipos.map(t => acoesFiltradas.filter(a => (a.Tipo || a.tipo) === t).length);
     if (chartTipo) chartTipo.destroy();
     chartTipo = new Chart(document.getElementById('chart-acoes-tipo'), {
         type: 'bar',
         data: { labels: tipos, datasets: [{ label: 'Ações', data: counts, backgroundColor: ['#3b82f6', '#0f3b5e'] }] },
         options: { responsive: true, plugins: { legend: { display: false } } }
     });
-    
-    const escolasIds = [...new Set(acoesFiltradas.map(a => a.escolaId))];
+
+    const escolasIds = [...new Set(acoesFiltradas.map(a => String(a.EscolaID || a.escolaID || a.escolaId)))];
     const escolasNomes = escolasIds.map(id => {
         const e = getEscolaById(id);
-        return e ? e.fantasia : 'N/E';
+        return e ? (e.NomeFantasia || e.fantasia) : 'N/E';
     });
-    const contagens = escolasIds.map(id => acoesFiltradas.filter(a => a.escolaId === id).length);
+    const contagens = escolasIds.map(id => acoesFiltradas.filter(a => String(a.EscolaID || a.escolaID || a.escolaId) === String(id)).length);
     if (chartEscola) chartEscola.destroy();
     chartEscola = new Chart(document.getElementById('chart-acoes-escola'), {
         type: 'pie',
@@ -511,14 +665,14 @@ document.getElementById('gerar-relatorio').addEventListener('click', async () =>
     const dataFim = document.getElementById('relatorio-data-fim').value;
 
     const filtros = {};
-    if (escolaId) filtros.escolaId = Number(escolaId);
-    if (dataInicio) filtros.dataInicio = dataInicio;
-    if (dataFim) filtros.dataFim = dataFim;
+    if (escolaId) filtros.EscolaID = escolaId;
+    if (dataInicio) filtros.DataInicio = dataInicio;
+    if (dataFim) filtros.DataFim = dataFim;
 
     try {
         const response = await gerarRelatorio(filtros);
         if (!response.ok) throw new Error('Erro ao gerar relatório');
-        
+
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -531,29 +685,6 @@ document.getElementById('gerar-relatorio').addEventListener('click', async () =>
     } catch (error) {
         console.error('Erro:', error);
         alert('Erro ao gerar relatório. Verifique a conexão com o Power Automate.');
-        // Fallback local
-        const acoes = DB.acoes.filter(a => {
-            let match = true;
-            if (escolaId) match = match && a.escolaId === Number(escolaId);
-            if (dataInicio) match = match && a.dataRegistro >= dataInicio;
-            if (dataFim) match = match && a.dataRegistro <= dataFim;
-            return match;
-        });
-        const preview = document.getElementById('preview-relatorio');
-        if (!acoes.length) {
-            preview.innerHTML = '<p>Nenhuma ação encontrada para os filtros.</p>';
-            return;
-        }
-        let html = '<h3>Relatório de Ações (fallback)</h3><table><thead><tr><th>Escola</th><th>Tipo</th><th>Responsável</th><th>Data</th><th>Descrição</th></tr></thead><tbody>';
-        acoes.forEach(a => {
-            const escola = getEscolaById(a.escolaId);
-            const ag = getAgendamentoById(a.agendamentoId);
-            const responsavel = ag ? `${ag.responsavel} - ${ag.respNome}` : 'N/I';
-            html += `<tr><td>${escola ? escola.fantasia : 'N/E'}</td><td>${a.tipo}</td><td>${responsavel}</td><td>${a.dataRegistro}</td><td>${a.descricao || '—'}</td></tr>`;
-        });
-        html += '</tbody></table><p><em>Relatório gerado localmente (fallback) em ' + new Date().toLocaleString() + '</em></p>';
-        preview.innerHTML = html;
-        alert('Relatório gerado localmente (fallback).');
     }
 });
 

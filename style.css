@@ -11,6 +11,43 @@ body {
     padding: 20px;
 }
 
+/* OVERLAY DE LOADING TELA ESCURA */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 59, 94, 0.85); /* Azul escuro semi-transparente */
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    backdrop-filter: blur(4px);
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.loading-overlay p {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-top: 15px;
+}
+
+.spinner-large {
+    width: 60px;
+    height: 60px;
+    border: 6px solid rgba(255, 255, 255, 0.2);
+    border-top: 6px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+/* FIM OVERLAY */
+
 .app-container {
     max-width: 1400px;
     margin: 0 auto;
