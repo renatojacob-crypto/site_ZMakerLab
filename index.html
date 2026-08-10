@@ -34,25 +34,36 @@
                             <input type="text" id="escola-cnpj" placeholder="CNPJ" required>
                             <input type="text" id="escola-razao" placeholder="Razão Social" required>
                             <input type="text" id="escola-fantasia" placeholder="Nome Fantasia" required>
-                            <input type="text" id="escola-endereco" placeholder="Endereço">
+                            
+                            <!-- CEP com auto preenchimento -->
+                            <div class="cep-group">
+                                <input type="text" id="escola-cep" placeholder="CEP (somente números)" maxlength="8" required>
+                                <button type="button" id="buscar-cep" class="btn-secondary">🔍 Buscar CEP</button>
+                            </div>
+                            
+                            <input type="text" id="escola-endereco" placeholder="Endereço" required>
                             <input type="text" id="escola-complemento" placeholder="Complemento">
-                            <input type="text" id="escola-bairro" placeholder="Bairro">
-                            <input type="text" id="escola-cidade" placeholder="Cidade">
-                            <input type="text" id="escola-uf" placeholder="UF" maxlength="2">
-                            <input type="text" id="escola-cpf" placeholder="CPF Responsável">
-                            <select id="escola-tipo-zmaker">
+                            <input type="text" id="escola-bairro" placeholder="Bairro" required>
+                            <input type="text" id="escola-cidade" placeholder="Cidade" required>
+                            <input type="text" id="escola-uf" placeholder="UF" maxlength="2" required>
+                            
+                            <select id="escola-tipo-zmaker" required>
+                                <option value="">Tipo de ZMaker</option>
                                 <option value="Full">ZMaker Lab Full</option>
                                 <option value="Start">ZMaker Lab Start</option>
                             </select>
-                            <select id="escola-origem">
+                            <select id="escola-origem" required>
+                                <option value="">Origem do ZMaker</option>
                                 <option value="Comercial">Comercial</option>
                                 <option value="Gestão Educacional">Gestão Educacional</option>
                                 <option value="Outro">Outro</option>
                             </select>
-                            <select id="escola-bonificacao">
+                            <select id="escola-bonificacao" required>
+                                <option value="">Bonificação ou Venda</option>
                                 <option value="Bonificação">Bonificação</option>
                                 <option value="Venda">Venda</option>
                             </select>
+                            
                             <input type="text" id="escola-contato-nome" placeholder="Nome do Contato" required>
                             <input type="text" id="escola-contato-cargo" placeholder="Cargo">
                             <input type="email" id="escola-contato-email" placeholder="E-mail do Contato">
@@ -75,6 +86,7 @@
                         <div class="form-grid">
                             <select id="agendamento-escola" required></select>
                             <select id="agendamento-tipo-evento" required>
+                                <option value="">Tipo de Evento</option>
                                 <option value="Formação Inicial/Continuada">Formação Inicial/Continuada</option>
                                 <option value="Montagem de Equipamentos">Montagem de Equipamentos</option>
                                 <option value="Reunião de Implementação">Reunião de Implementação</option>
@@ -84,6 +96,19 @@
                             </select>
                             <input type="date" id="agendamento-data" required>
                             <input type="time" id="agendamento-hora" required>
+                            
+                            <!-- Quem realizará a ação -->
+                            <select id="agendamento-responsavel" required>
+                                <option value="">Quem realizará a ação?</option>
+                                <option value="Comercial">Comercial</option>
+                                <option value="Orientador">Orientador</option>
+                                <option value="Equipe ZMaker">Equipe ZMaker</option>
+                            </select>
+                            <input type="text" id="agendamento-resp-nome" placeholder="Nome do Responsável" required>
+                            <input type="email" id="agendamento-resp-email" placeholder="E-mail do Responsável" required>
+                            <input type="tel" id="agendamento-resp-telefone" placeholder="Telefone do Responsável" required>
+                            
+                            <!-- Contatos adicionais -->
                             <input type="text" id="agendamento-contato-nome" placeholder="Nome do Contato (opcional)">
                             <input type="text" id="agendamento-contato-cargo" placeholder="Cargo (opcional)">
                             <input type="email" id="agendamento-contato-email" placeholder="E-mail (opcional)">
@@ -106,18 +131,11 @@
                         <div class="form-grid">
                             <select id="acao-agendamento" required></select>
                             <select id="acao-tipo" required>
+                                <option value="">Tipo de Ação</option>
                                 <option value="Remota">Remota</option>
                                 <option value="Presencial">Presencial</option>
                             </select>
-                            <select id="acao-responsavel" required>
-                                <option value="Comercial">Comercial</option>
-                                <option value="Orientador">Orientador</option>
-                                <option value="Equipe ZMaker">Equipe ZMaker</option>
-                            </select>
-                            <input type="text" id="acao-resp-nome" placeholder="Nome do Responsável" required>
-                            <input type="email" id="acao-resp-email" placeholder="E-mail do Responsável" required>
-                            <input type="tel" id="acao-resp-telefone" placeholder="Telefone do Responsável" required>
-                            <textarea id="acao-descricao" placeholder="Descrição da ação realizada..." rows="3"></textarea>
+                            <textarea id="acao-descricao" placeholder="Descrição da ação realizada..." rows="3" required></textarea>
                             <div class="upload-area">
                                 <label>Fotos (até 5):</label>
                                 <input type="file" id="acao-fotos" accept="image/*" multiple>
@@ -188,7 +206,7 @@
         </main>
     </div>
 
-    <!-- JavaScript próprio -->
+    <script src="config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

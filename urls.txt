@@ -1,0 +1,11 @@
+URL API - Listar Escolas - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/06/workflows/c62297c1ce6345d0ab2190018233c32a/triggers/manual/paths/invoke/api/escolas?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=7KE5gnQ8LVEE9Mwl5F_oWvjG0M3cnMWMkSdMumSyCdM
+
+URL API - Criar Escola - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/08/workflows/eaf3341a3a0446ccb348a26bb532179c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ipxBpTOL9LWIJVdAtDcmWvTf6OGnbTkdQbGzfeg3z-E
+
+URL API - Listar Agendamentos - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/28/workflows/6d09ca561ea14ba78e645badee9589c3/triggers/manual/paths/invoke/api/agendamentos?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=yo-GTcMnPD4dczTiKt7cGQS96kXSLJlv6253AUd7FI8
+
+URL API - Criar Agendamentos - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/20/workflows/1fb61a4796de4a4295b69b04e6942e49/triggers/manual/paths/invoke/api/agendamentos?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ersor03w4lxamcigEUDwpwEILa2wGC2r4sWQASm5rwA
+
+URL API - Criar Ação - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/12/workflows/52b6af4c67e9414181fa67d5790f5e1e/triggers/manual/paths/invoke/api/acoes?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iKV0M_6AvGsmRvHhgagr4dygDJnlOxrnWbIE-Ncx_08
+
+URL Gerar Relatório PDF - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/15/workflows/e4e666c3f12e40e3a4c80fc3ad21a37a/triggers/manual/paths/invoke/gerar_relatorio?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xycg3o9PQwJ3ixkVY1_V_iO83_7sf5Ac88T4SeEFvwc
