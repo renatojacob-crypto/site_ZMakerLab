@@ -16,7 +16,7 @@ const API_CONFIG = {
     postAgendamento: 'https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/20/workflows/1fb61a4796de4a4295b69b04e6942e49/triggers/manual/paths/invoke/api/agendamentos?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ersor03w4lxamcigEUDwpwEILa2wGC2r4sWQASm5rwA',
     
     // Listar ações (GET)
-    getAcoes: '',
+    getAcoes: 'https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/28/workflows/4769b005b04941f6b9952e88f2fe6901/triggers/manual/paths/invoke/api/acoes?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=fUKlDwHbGSzI9iu-xpUpf7B9zbxkVrCIn6FfspfhQrw',
     
     // Criar ação (POST)
     postAcao: 'https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/12/workflows/52b6af4c67e9414181fa67d5790f5e1e/triggers/manual/paths/invoke/api/acoes?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iKV0M_6AvGsmRvHhgagr4dygDJnlOxrnWbIE-Ncx_08',

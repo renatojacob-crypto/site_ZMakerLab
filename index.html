@@ -143,6 +143,14 @@
                                 <option value="Presencial">Presencial</option>
                             </select>
                             <textarea id="acao-descricao" placeholder="Descrição da ação realizada..." rows="3" required></textarea>
+                            <div>
+                                <label for="acao-data">Data da Realização:</label>
+                                <input type="date" id="acao-data" required>
+                            </div>
+                            <div>
+                                <label for="acao-horas">Carga Horária (Horas):</label>
+                                <input type="number" id="acao-horas" min="1" placeholder="Ex: 4" required>
+                            </div>
                             <div class="upload-area">
                                 <label>Fotos (até 5):</label>
                                 <input type="file" id="acao-fotos" accept="image/*" multiple>

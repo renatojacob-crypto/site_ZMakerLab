@@ -6,7 +6,14 @@
 }
 
 body {
-    background: #f4f7fc;
+    /* AJUSTE DO BACKGROUND COM A IMAGEM */
+    background-image: url(/images/fundo_ZML_site.png);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-color: #f4f7fc; /* Cor de fallback caso a imagem demore a carregar */
+    
     color: #1e293b;
     padding: 20px;
 }
@@ -57,7 +64,8 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
+    /* Adicionada leve transparência no cabeçalho para mesclar melhor com o fundo */
+    background: rgba(255, 255, 255, 0.95);
     padding: 16px 28px;
     border-radius: 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
@@ -114,7 +122,8 @@ nav {
 }
 
 .card {
-    background: white;
+    /* Adicionada leve transparência nos cartões para mesclar melhor com o fundo */
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
     padding: 24px;
     margin-bottom: 24px;
@@ -124,22 +133,25 @@ nav {
 .card h2 {
     font-size: 1.3rem;
     font-weight: 600;
-    margin-bottom: 18px;
+    margin-bottom: 22px;
     color: #0f3b5e;
 }
 
+/* MODIFICAÇÃO: Ajuste na grade do formulário para 1 a 2 campos por linha */
 .form-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 14px;
-    margin-bottom: 16px;
+    /* Aumentado o minmax de 200px para 380px, forçando de 1 a 2 itens por linha */
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 20px; /* Mais respiro entre os campos */
+    margin-bottom: 20px;
 }
 
+/* MODIFICAÇÃO: Aumentado o padding e o tamanho da fonte para campos menos "espremidos" */
 .form-grid input, .form-grid select, .form-grid textarea {
-    padding: 10px 14px;
+    padding: 12px 16px;
     border: 1px solid #dce1e8;
     border-radius: 12px;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     background: #fafcff;
     transition: 0.2s;
     width: 100%;
@@ -154,7 +166,7 @@ nav {
 .cep-group {
     grid-column: 1 / -1;
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: center;
 }
 
@@ -167,7 +179,7 @@ nav {
     background: #e2e8f0;
     color: #1e293b;
     border: none;
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -196,13 +208,13 @@ nav {
     background: #0f3b5e;
     color: white;
     border: none;
-    padding: 10px 28px;
+    padding: 12px 32px;
     border-radius: 40px;
     font-weight: 500;
     cursor: pointer;
     transition: 0.2s;
-    font-size: 0.95rem;
-    margin-top: 6px;
+    font-size: 1rem;
+    margin-top: 10px;
 }
 
 .btn-primary:hover {
@@ -212,25 +224,25 @@ nav {
 
 .table-responsive {
     overflow-x: auto;
-    margin-top: 6px;
+    margin-top: 10px;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 th {
     background: #f1f5f9;
     text-align: left;
-    padding: 12px 10px;
+    padding: 14px 12px;
     font-weight: 600;
     color: #1e293b;
 }
 
 td {
-    padding: 10px 10px;
+    padding: 12px 12px;
     border-bottom: 1px solid #e9edf2;
 }
 
@@ -247,14 +259,14 @@ td {
 }
 
 .stat-card h3 {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 500;
     color: #64748b;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .stat-card span {
-    font-size: 2.2rem;
+    font-size: 2.4rem;
     font-weight: 700;
     color: #0f3b5e;
 }
@@ -273,11 +285,11 @@ td {
     flex-wrap: wrap;
     align-items: end;
     gap: 14px;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 }
 
 .filter-group select, .filter-group input {
-    padding: 10px 14px;
+    padding: 12px 16px;
     border: 1px solid #dce1e8;
     border-radius: 12px;
     background: #fafcff;
@@ -287,7 +299,7 @@ td {
     margin-top: 20px;
     background: #f8fafc;
     border-radius: 16px;
-    padding: 16px;
+    padding: 20px;
     max-height: 400px;
     overflow-y: auto;
 }
