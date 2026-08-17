@@ -468,13 +468,15 @@ document.getElementById('form-agendamento').addEventListener('submit', async (e)
     
     const rawData = document.getElementById('agendamento-data').value; 
     const rawHora = document.getElementById('agendamento-hora').value; 
+    
+    // Garante o formato limpo yyyy-MM-dd sem horas adicionais do input
     const dataLimpa = rawData ? rawData.split('T')[0] : '';
     const horaLimpa = rawHora ? rawHora.substring(0, 5) : '';
     
     const dados = {
         EscolaID: String(escolaIdValue).trim(), 
         TipoEvento: document.getElementById('agendamento-tipo-evento').value,
-        Data: dataLimpa,
+        Data: dataLimpa, // Envia para o Excel em formato ISO (yyyy-MM-dd)
         Hora: horaLimpa,
         Responsavel: document.getElementById('agendamento-responsavel').value,
         RespNome: document.getElementById('agendamento-resp-nome').value,
@@ -543,7 +545,7 @@ document.getElementById('form-acao').addEventListener('submit', async (e) => {
             EscolaID: String(escolaId).trim(),
             Tipo: document.getElementById('acao-tipo').value,
             Descricao: document.getElementById('acao-descricao').value,
-            DataRegistro: dataDigitada, 
+            DataRegistro: dataDigitada, // Envia para o Excel em formato ISO (yyyy-MM-dd)
             CargaHoraria: Number(cargaHoraria) || 0, 
             Fotos: fotosBase64 
         };
@@ -704,6 +706,8 @@ document.getElementById('gerar-relatorio').addEventListener('click', async () =>
 
     const filtros = {};
     if (escolaId) filtros.EscolaID = escolaId;
+    
+    // Envia o padrão ISO (yyyy-MM-dd) para o Power Automate conseguir filtrar e comparar
     if (dataInicio) filtros.DataInicio = dataInicio;
     if (dataFim) filtros.DataFim = dataFim;
 
@@ -711,21 +715,18 @@ document.getElementById('gerar-relatorio').addEventListener('click', async () =>
     const textoOriginal = btnRelatorio.innerHTML;
 
     try {
-        // Ativa animação de carregamento no botão e na tela
         btnRelatorio.innerHTML = '<span class="spinner"></span> Gerando PDF...';
         btnRelatorio.disabled = true;
         showLoading();
 
         const response = await gerarRelatorio(filtros);
 
-        // Valida se o retorno é um PDF válido e não uma mensagem de erro JSON/texto
         const contentType = response.headers.get('content-type') || '';
         if (contentType.includes('application/json') || contentType.includes('text')) {
             const errText = await response.text();
             throw new Error(errText || 'Erro interno no Power Automate ao gerar o PDF.');
         }
 
-        // Converte o binário recebido em Blob e dispara o download automático no computador
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -740,7 +741,6 @@ document.getElementById('gerar-relatorio').addEventListener('click', async () =>
         console.error('Erro:', error);
         alert('Erro ao gerar o relatório em PDF. Verifique o fluxo do Power Automate.');
     } finally {
-        // Restaura o botão e remove o carregamento
         btnRelatorio.innerHTML = textoOriginal;
         btnRelatorio.disabled = false;
         hideLoading();
