@@ -808,7 +808,7 @@ document.getElementById('gerar-relatorio').addEventListener('click', () => {
         <body onload="window.print();">
             
             <div class="header">
-                <img src="logo.png" class="logo" alt="Logo ZMaker">
+                <img src="/images/logozmaker.png" class="logo" alt="Logo ZMaker">
                 <div class="title-container">
                     <h2>Relatório de Atendimentos ZMaker</h2>
                     <div class="escola-subtitulo">Escola: ${nomeEscola}</div>
