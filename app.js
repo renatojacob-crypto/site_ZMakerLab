@@ -82,22 +82,8 @@ async function createAcao(dados) {
     return await callAPI(API.postAcao, 'POST', dados);
 }
 
-async function gerarRelatorio(filtros) {
-    const url = API.postRelatorio;
-    const options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Prefer': 'respond-async=false'
-        },
-        body: JSON.stringify(filtros)
-    };
-    const response = await fetch(url, options);
-    if (!response.ok) {
-        throw new Error(`Erro ao gerar relatório: ${response.status}`);
-    }
-    return response;
-}
+// A função de Gerar Relatório pelo Power Automate foi removida, 
+// pois agora fazemos o HTML nativo mais rápido e bonito abaixo.
 
 // ====== CONVERSÃO INTELIGENTE DE DATAS ======
 function excelDateToDate(serial) {
@@ -360,6 +346,14 @@ function renderAgendamentos() {
         const nomeEscola = escola ? (escola.NomeFantasia || escola.fantasia || escola.RazaoSocial || 'N/E') : 'N/E';
         let dataHora = formatExcelDateTime(a.Data, a.Hora);
         const agendamentoId = a.ID || a.id;
+
+        // Verifica se o agendamento já tem ação. Se tiver, muda o botão.
+        const jaRegistrado = DB.acoes.some(ac => String(ac.AgendamentoID || ac.agendamentoID || ac.agendamentoId).trim() === String(agendamentoId).trim());
+        
+        let botaoAcao = `<button class="btn-primary" style="padding:4px 12px;font-size:0.8rem;" onclick="carregarAcaoParaAgendamento('${agendamentoId}')">Registrar Ação</button>`;
+        if (jaRegistrado) {
+            botaoAcao = `<span style="color: #10b981; font-weight: bold; font-size: 0.9rem;">✓ Concluído</span>`;
+        }
         
         html += `<tr>
             <td>${nomeEscola}</td>
@@ -367,7 +361,7 @@ function renderAgendamentos() {
             <td>${dataHora}</td>
             <td>${a.Responsavel || a.responsavel || ''} - ${a.RespNome || a.respNome || ''}</td>
             <td>${a.ContatoNome || a.contatoNome || '—'}</td>
-            <td><button class="btn-primary" style="padding:4px 12px;font-size:0.8rem;" onclick="carregarAcaoParaAgendamento('${agendamentoId}')">Registrar Ação</button></td>
+            <td>${botaoAcao}</td>
         </tr>`;
     });
     html += '</tbody></table>';
@@ -552,7 +546,7 @@ document.getElementById('form-acao').addEventListener('submit', async (e) => {
 
         await createAcao(dados);
         await new Promise(resolve => setTimeout(resolve, 2000));
-        await initData();
+        await initData(); // Ao chamar initData, a select de ações é atualizada automaticamente
         document.getElementById('form-acao').reset();
         document.getElementById('foto-count').textContent = '0 arquivo(s)';
         alert('Ação registrada com sucesso e imagens enviadas!');
@@ -582,18 +576,29 @@ function atualizarSelects() {
         }
     });
     
+    // Atualiza Select de Ações garantindo que não mostre agendamentos já realizados
     const selAcao = document.getElementById('acao-agendamento');
     if (selAcao) {
         const currentVal = selAcao.value;
-        selAcao.innerHTML = '<option value="">Selecione o agendamento...</option>';
+        selAcao.innerHTML = '<option value="">Selecione um agendamento pendente...</option>';
+        
         DB.agendamentos.forEach(a => {
-            const escolaId = a.EscolaID || a.escolaID || a.escolaId;
-            const escola = getEscolaById(escolaId);
-            const nome = escola ? (escola.NomeFantasia || escola.fantasia || 'N/E') : 'N/E';
             const idAg = a.ID || a.id;
-            const exibicaoAgend = formatExcelDateTime(a.Data, a.Hora);
-            selAcao.innerHTML += `<option value="${idAg}">${nome} - ${a.TipoEvento || a.tipoEvento} (${exibicaoAgend})</option>`;
+            
+            // Verifica se o ID deste agendamento já está em alguma ação registrada
+            const jaRegistrado = DB.acoes.some(ac => String(ac.AgendamentoID || ac.agendamentoID || ac.agendamentoId).trim() === String(idAg).trim());
+            
+            // Só adiciona na lista se não estiver registrado
+            if (!jaRegistrado) {
+                const escolaId = a.EscolaID || a.escolaID || a.escolaId;
+                const escola = getEscolaById(escolaId);
+                const nome = escola ? (escola.NomeFantasia || escola.fantasia || 'N/E') : 'N/E';
+                const exibicaoAgend = formatExcelDateTime(a.Data, a.Hora);
+                
+                selAcao.innerHTML += `<option value="${idAg}">${nome} - ${a.TipoEvento || a.tipoEvento} (${exibicaoAgend})</option>`;
+            }
         });
+        
         if (currentVal && currentVal !== '') {
             const existe = Array.from(selAcao.options).some(opt => opt.value === currentVal);
             if (existe) selAcao.value = currentVal;
@@ -604,6 +609,14 @@ function atualizarSelects() {
 // ====== NAVEGAÇÃO ======
 window.carregarAcaoParaAgendamento = function(id) {
     const sel = document.getElementById('acao-agendamento');
+    
+    // Se o agendamento clicado já não estiver na lista suspensa (porque foi concluído), recusa o carregamento.
+    const opcaoExiste = Array.from(sel.options).some(opt => opt.value === id);
+    if(!opcaoExiste) {
+        alert('Esta ação já foi registrada e não está mais pendente.');
+        return;
+    }
+
     sel.value = id;
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-acoes').classList.add('active');
@@ -698,56 +711,142 @@ function atualizarDashboard() {
     });
 }
 
-// ====== RELATÓRIO COM ANIMAÇÃO E DOWNLOAD DE PDF ======
-document.getElementById('gerar-relatorio').addEventListener('click', async () => {
+// ====== RELATÓRIO DIRETO PELO NAVEGADOR (SEM POWER AUTOMATE) ======
+document.getElementById('gerar-relatorio').addEventListener('click', () => {
     const escolaId = document.getElementById('relatorio-escola').value;
     const dataInicio = document.getElementById('relatorio-data-inicio').value;
     const dataFim = document.getElementById('relatorio-data-fim').value;
 
-    const filtros = {};
-    if (escolaId) filtros.EscolaID = escolaId;
-    
-    // Envia o padrão ISO (yyyy-MM-dd) para o Power Automate conseguir filtrar e comparar
-    if (dataInicio) filtros.DataInicio = dataInicio;
-    if (dataFim) filtros.DataFim = dataFim;
-
-    const btnRelatorio = document.getElementById('gerar-relatorio');
-    const textoOriginal = btnRelatorio.innerHTML;
-
-    try {
-        btnRelatorio.innerHTML = '<span class="spinner"></span> Gerando PDF...';
-        btnRelatorio.disabled = true;
-        showLoading();
-
-        const response = await gerarRelatorio(filtros);
-
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json') || contentType.includes('text')) {
-            const errText = await response.text();
-            throw new Error(errText || 'Erro interno no Power Automate ao gerar o PDF.');
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'Relatorio_Acoes.pdf';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro ao gerar o relatório em PDF. Verifique o fluxo do Power Automate.');
-    } finally {
-        btnRelatorio.innerHTML = textoOriginal;
-        btnRelatorio.disabled = false;
-        hideLoading();
+    if (!escolaId) {
+        alert('Por favor, selecione uma escola para gerar o relatório.');
+        return;
     }
+
+    // 1. Filtrar os dados localmente
+    let acoesFiltradas = DB.acoes.filter(a => String(a.EscolaID || a.escolaID || a.escolaId) === String(escolaId));
+
+    if (dataInicio) {
+        acoesFiltradas = acoesFiltradas.filter(a => {
+            const iso = excelDateToISO(a.DataRegistro || a.dataRegistro || a.Data || a.data);
+            return iso >= dataInicio;
+        });
+    }
+    if (dataFim) {
+        acoesFiltradas = acoesFiltradas.filter(a => {
+            const iso = excelDateToISO(a.DataRegistro || a.dataRegistro || a.Data || a.data);
+            return iso && iso <= dataFim;
+        });
+    }
+
+    // 2. Resgatar nome da escola
+    const escola = getEscolaById(escolaId);
+    const nomeEscola = escola ? (escola.NomeFantasia || escola.fantasia || 'Nome não encontrado') : 'Escola';
+
+    // 3. Montar as linhas da tabela
+    let linhasHtml = '';
+    let totalHoras = 0;
+
+    if (acoesFiltradas.length === 0) {
+        linhasHtml = '<tr><td colspan="7" style="text-align: center; padding: 15px;">Nenhuma ação encontrada para este período.</td></tr>';
+    } else {
+        acoesFiltradas.forEach(ac => {
+            // Puxa o Agendamento relacionado à esta ação
+            const agendamento = getAgendamentoById(ac.AgendamentoID || ac.agendamentoID || ac.agendamentoId);
+            
+            // Resgata o Evento Planejado e o Responsável. Se não achar, coloca N/I (Não Informado)
+            const eventoPlanejado = agendamento ? (agendamento.TipoEvento || agendamento.tipoEvento || 'N/I') : 'N/I';
+            const responsavel = agendamento ? (`${agendamento.Responsavel || agendamento.responsavel} - ${agendamento.RespNome || agendamento.respNome}`) : 'N/I';
+            
+            let dataExibicao = excelDateToDate(ac.DataRegistro || ac.dataRegistro || ac.Data || ac.data);
+            let horas = Number(ac.CHAcao || ac.chAcao || ac.CargaHoraria || ac.cargaHoraria || ac.Horas || ac.horas || 0);
+            totalHoras += horas;
+            
+            linhasHtml += `
+                <tr>
+                    <td>${eventoPlanejado}</td>
+                    <td>${responsavel}</td>
+                    <td>${ac.Tipo || ac.tipo || ''}</td>
+                    <td>${dataExibicao}</td>
+                    <td>${horas}h</td>
+                    <td>${ac.Descricao || ac.descricao || ''}</td>
+                    <td><a href="${ac.Fotos || '#'}" target="_blank">Ver Fotos</a></td>
+                </tr>
+            `;
+        });
+    }
+
+    const dataAtual = new Date().toLocaleString('pt-BR');
+
+    // 4. Montar a estrutura HTML do PDF
+    const relatorioHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Relatório - ${nomeEscola}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f3b5e; padding-bottom: 15px; margin-bottom: 20px; }
+                .logo { max-height: 60px; }
+                .title-container { text-align: right; }
+                h2 { color: #0f3b5e; margin: 0; font-size: 22px; }
+                .escola-subtitulo { font-size: 18px; color: #555; font-weight: bold; margin-top: 5px; }
+                .data-geracao { font-size: 12px; color: #888; margin-top: 5px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+                th { background-color: #0f3b5e; color: white; padding: 10px; text-align: left; }
+                td { padding: 8px; border-bottom: 1px solid #ddd; }
+                .total { font-weight: bold; margin-top: 20px; font-size: 16px; text-align: right; color: #0f3b5e; }
+                a { color: #0f3b5e; text-decoration: none; font-weight: bold; }
+                
+                @media print {
+                    @page { margin: 1.5cm; }
+                    body { margin: 0; }
+                    .no-print { display: none; }
+                }
+            </style>
+        </head>
+        <body onload="window.print();">
+            
+            <div class="header">
+                <img src="logo.png" class="logo" alt="Logo ZMaker">
+                <div class="title-container">
+                    <h2>Relatório de Atendimentos ZMaker</h2>
+                    <div class="escola-subtitulo">Escola: ${nomeEscola}</div>
+                    <div class="data-geracao">Gerado em: ${dataAtual}</div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <!-- Novas colunas adicionadas -->
+                        <th>Evento Agendado</th>
+                        <th>Responsável</th>
+                        <th>Tipo (Executado)</th>
+                        <th>Data</th>
+                        <th>C. Horária</th>
+                        <th>Descrição</th>
+                        <th>Fotos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${linhasHtml}
+                </tbody>
+            </table>
+
+            <div class="total">Total de CH Executada: ${totalHoras}h</div>
+
+        </body>
+        </html>
+    `;
+
+    // 5. Abre uma nova aba e aciona o motor de PDF do navegador
+    const janelaPrint = window.open('', '_blank');
+    janelaPrint.document.write(relatorioHTML);
+    janelaPrint.document.close();
 });
 
-// ====== NAVEGAÇÃO ======
+// ====== NAVEGAÇÃO BÁSICA ======
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
