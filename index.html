@@ -22,7 +22,6 @@
                 <button class="nav-btn active" data-tab="escolas">🏫 Escolas</button>
                 <button class="nav-btn" data-tab="agendamentos">📅 Agendamentos</button>
                 <button class="nav-btn" data-tab="acoes">📝 Ações</button>
-                <!-- Novo botão de Logística -->
                 <button class="nav-btn" data-tab="logistica">📦 Logística</button>
                 <button class="nav-btn" data-tab="dashboard">📊 Dashboard</button>
                 <button class="nav-btn" data-tab="relatorios">📄 Relatórios</button>
@@ -138,6 +137,53 @@
                                 <option value="Presencial">Presencial</option>
                             </select>
                             <textarea id="acao-descricao" placeholder="Descrição da ação realizada..." rows="3" required></textarea>
+                            
+                            <!-- NOVO: Checklist de Setup Dinâmico (Invisível por padrão) -->
+                            <div id="area-setup-hardware" class="hardware-setup-box" style="display: none;">
+                                <h3>🛠️ Validação de Inventário e Hardware</h3>
+                                <p style="font-size: 11px; color: #666; margin: 0;">Marque os itens que foram entregues e estão em conformidade no ZMaker Lab:</p>
+                                
+                                <div class="checklist-container">
+                                    <div class="checklist-grid">
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Impressora 3D BambuLab A1 Mini"> Impressora 3D BambuLab A1 Mini</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Multifuncional XTool M1"> Multifuncional XTool M1</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Painel de Ferramentas"> Painel de Ferramentas</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Conj. Chaves (Philips/Fenda) 6 unids."> Conj. Chaves (Philips/Fenda) 6 unids.</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Conj. Alicates Grandes"> Conj. Alicates Grandes</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Conj. Alicates Pequenos"> Conj. Alicates Pequenos</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Paquímetro"> Paquímetro</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Réguas"> Réguas</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Serra/Arco de Serra"> Serra/Arco de Serra</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Martelo Unha"> Martelo Unha</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Martelo Borracha"> Martelo Borracha</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Pistola de Cola Quente"> Pistola de Cola Quente</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Tesoura"> Tesoura</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Estilete"> Estilete</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Óculos de Proteção"> Óculos de Proteção</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Luvas"> Luvas</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Trena"> Trena</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Fita Crepe Larga"> Fita Crepe Larga</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Conj. Suportes MDF Painel"> Conj. Suportes MDF Painel</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="MDF 3mm Consumível"> MDF 3mm Consumível</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Papelão 3mm Branco Consumível"> Papelão 3mm Branco Consumível</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Papel Panamá Consumível"> Papel Panamá Consumível</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Papel Craft Consumível"> Papel Craft Consumível</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Papel Sulfite Cores Diversas"> Papel Sulfite Cores Diversas</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Tecidos Coloridos Consumível"> Tecidos Coloridos Consumível</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Ferro de Solda"> Ferro de Solda</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Suporte Ferro de Solda"> Suporte Ferro de Solda</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Fio de Solda (estanho)"> Fio de Solda (estanho)</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Multímetro"> Multímetro</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Álcool Etílico"> Álcool Etílico</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Isopropanol"> Isopropanol</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Óleo lubrificante spray"> Óleo lubrificante spray</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Graxa de Lítio"> Graxa de Lítio</label>
+                                        <label class="check-item"><input type="checkbox" class="chk-equipamento" value="Lenços para Limpeza"> Lenços para Limpeza</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- FIM DO NOVO -->
+
                             <div>
                                 <label for="acao-data">Data da Realização:</label>
                                 <input type="date" id="acao-data" required>
@@ -266,6 +312,7 @@
                         <span id="total-reunioes">0</span>
                     </div>
                 </div>
+                
                 <!-- NOVA ÁREA: Status de Implantação -->
                 <div class="card">
                     <h2>Status Global de Implantação</h2>
@@ -273,7 +320,6 @@
                     <div id="lista-progresso-escolas"></div>
                 </div>
 
-                <!-- Gráficos ... -->
                 <div class="card chart-card">
                     <h3>Ações por Tipo</h3>
                     <canvas id="chart-acoes-tipo"></canvas>
@@ -302,4 +348,3 @@
     <script src="config.js"></script>
     <script src="app.js"></script>
 </body>
-</html>

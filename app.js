@@ -195,12 +195,9 @@ async function initData() {
     renderEscolas();
     renderAgendamentos();
     renderAcoes();
-    atualizarDashboard();
+    atualizarDashboard(); // A régua de progresso é chamada por dentro desta função
     renderPainelLogistica();
-    // Adiciona o render das réguas de implantação no fluxo do dashboard
-    renderProgressoImplantacao();
 }
-
 
 // ====== HELPERS ======
 function getEscolaById(id) {
@@ -267,7 +264,6 @@ function renderPainelLogistica() {
     </tr></thead><tbody>`;
     
     listaMostrar.forEach(e => {
-        // Pega o último registro de logística dessa escola (caso haja mais de um na planilha)
         const logsEscola = DB.logistica.filter(l => l.EscolaID === e.ID);
         const log = logsEscola.length > 0 ? logsEscola[logsEscola.length - 1] : null;
         
@@ -277,7 +273,6 @@ function renderPainelLogistica() {
         const adesivacao = log ? (log.Adesivacao || log.adesivacao || 'Pendente') : 'Pendente';
         const previsao = log && (log.PrevisaoEntrega || log.previsao) ? excelDateToDate(log.PrevisaoEntrega || log.previsao) : '—';
         
-        // Estilização de badges para visual rápido
         let badgeMat = `<span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #f1f5f9; color: #475569;">${material}</span>`;
         if(material.includes('Concluído')) badgeMat = `<span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #dcfce7; color: #166534;">${material}</span>`;
         else if(material.includes('Trânsito') || material.includes('Separação')) badgeMat = `<span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #fef9c3; color: #854d0e;">${material}</span>`;
@@ -299,16 +294,15 @@ function renderPainelLogistica() {
     container.innerHTML = html + '</tbody></table>';
 }
 
-// ====== LÓGICA DO FORMULÁRIO DE LOGÍSTICA (AUTO-PREENCHIMENTO) ======
+// ====== LÓGICA DO FORMULÁRIO DE LOGÍSTICA ======
 document.getElementById('logistica-escola').addEventListener('change', function() {
     const escolaId = this.value;
     const form = document.getElementById('form-logistica');
     if(!escolaId) { form.reset(); return; }
 
-    // Procura se já tem dados salvos para autocompletar
     const logsEscola = DB.logistica.filter(l => l.EscolaID === escolaId);
     if(logsEscola.length > 0) {
-        const logInfo = logsEscola[logsEscola.length - 1]; // Pega o mais recente
+        const logInfo = logsEscola[logsEscola.length - 1];
         document.getElementById('log-tensao').value = logInfo.Tensao || logInfo.tensao || '';
         document.getElementById('log-faseada').value = logInfo.Faseada || logInfo.faseada || '';
         document.getElementById('log-adesivacao').value = logInfo.Adesivacao || logInfo.adesivacao || '';
@@ -317,7 +311,6 @@ document.getElementById('logistica-escola').addEventListener('change', function(
         document.getElementById('log-pedido-fases').value = logInfo.PedidoFases || logInfo.pedidoFases || '';
         document.getElementById('log-pedido-bonificacao').value = logInfo.PedidoBonificacao || logInfo.pedidoBonificacao || '';
     } else {
-        // Se não tiver, limpa os campos abaixo do select
         document.getElementById('log-tensao').value = '';
         document.getElementById('log-faseada').value = '';
         document.getElementById('log-adesivacao').value = '';
@@ -328,7 +321,6 @@ document.getElementById('logistica-escola').addEventListener('change', function(
     }
 });
 
-// ====== SALVAR LOGÍSTICA ======
 document.getElementById('form-logistica').addEventListener('submit', async (e) => {
     e.preventDefault();
     const escolaIdValue = document.getElementById('logistica-escola').value;
@@ -340,7 +332,7 @@ document.getElementById('form-logistica').addEventListener('submit', async (e) =
         Faseada: document.getElementById('log-faseada').value,
         Adesivacao: document.getElementById('log-adesivacao').value,
         MaterialEntregue: document.getElementById('log-material').value,
-        PrevisaoEntrega: document.getElementById('log-previsao').value, // ISO yyyy-MM-dd
+        PrevisaoEntrega: document.getElementById('log-previsao').value,
         PedidoFases: document.getElementById('log-pedido-fases').value,
         PedidoBonificacao: document.getElementById('log-pedido-bonificacao').value
     };
@@ -349,14 +341,12 @@ document.getElementById('form-logistica').addEventListener('submit', async (e) =
     try {
         await createLogistica(dados);
         await new Promise(r => setTimeout(r, 2000));
-        await initData(); // Atualiza a tela toda
+        await initData();
         alert('Informações de implantação salvas com sucesso!');
     } catch (error) {
         console.error(error);
         alert('Erro ao salvar as informações logísticas. Verifique a configuração do Power Automate.');
-    } finally {
-        hideLoading(); 
-    }
+    } finally { hideLoading(); }
 });
 
 // ====== FORMULÁRIOS RESTANTES ======
@@ -420,12 +410,46 @@ document.getElementById('form-agendamento').addEventListener('submit', async (e)
     } catch (error) { alert('Erro ao salvar o agendamento.'); } finally { hideLoading(); }
 });
 
+// ====== LÓGICA DO CHECKLIST DE HARDWARE (MOSTRAR/ESCONDER) ======
+document.getElementById('acao-agendamento').addEventListener('change', function() {
+    const agId = this.value;
+    const ag = getAgendamentoById(agId);
+    const areaSetup = document.getElementById('area-setup-hardware');
+    
+    if (ag && (ag.TipoEvento === 'Montagem de Equipamentos' || ag.tipoEvento === 'Montagem de Equipamentos')) {
+        if(areaSetup) areaSetup.style.display = 'block';
+    } else {
+        if(areaSetup) {
+            areaSetup.style.display = 'none';
+            document.querySelectorAll('.chk-equipamento').forEach(chk => chk.checked = false);
+        }
+    }
+});
+
 document.getElementById('form-acao').addEventListener('submit', async (e) => {
     e.preventDefault();
     const agendamentoIdValue = document.getElementById('acao-agendamento').value;
     const agendamento = getAgendamentoById(agendamentoIdValue);
     if (!agendamento) { alert('Selecione um agendamento válido.'); return; }
     
+    // Agrupa a descrição e o checklist dinâmico
+    let descricaoFinal = document.getElementById('acao-descricao').value;
+    const areaSetup = document.getElementById('area-setup-hardware');
+    
+    if (areaSetup && areaSetup.style.display === 'block') {
+        let presentes = [];
+        let ausentes = [];
+        
+        document.querySelectorAll('.chk-equipamento').forEach(chk => {
+            if (chk.checked) presentes.push(chk.value);
+            else ausentes.push(chk.value);
+        });
+        
+        descricaoFinal += `\n\n[INVENTÁRIO E SETUP]`;
+        descricaoFinal += `\n✅ CONFERIDOS: ${presentes.length > 0 ? presentes.join(', ') : 'Nenhum item marcado.'}`;
+        descricaoFinal += `\n❌ PENDENTES/AUSENTES: ${ausentes.length > 0 ? ausentes.join(', ') : 'Nenhuma pendência.'}`;
+    }
+
     showLoading(); 
     try {
         const filePromises = Array.from(document.getElementById('acao-fotos').files).map(file => {
@@ -442,7 +466,7 @@ document.getElementById('form-acao').addEventListener('submit', async (e) => {
             AgendamentoID: String(agendamentoIdValue).trim(),
             EscolaID: String(agendamento.EscolaID).trim(),
             Tipo: document.getElementById('acao-tipo').value,
-            Descricao: document.getElementById('acao-descricao').value,
+            Descricao: descricaoFinal,
             DataRegistro: document.getElementById('acao-data').value,
             CargaHoraria: Number(document.getElementById('acao-horas').value) || 0, 
             Fotos: fotosBase64 
@@ -453,6 +477,10 @@ document.getElementById('form-acao').addEventListener('submit', async (e) => {
         await initData();
         document.getElementById('form-acao').reset();
         document.getElementById('foto-count').textContent = '0 arquivo(s)';
+        
+        // Esconde o checklist novamente
+        if(areaSetup) areaSetup.style.display = 'none';
+        
         alert('Ação registrada com sucesso!');
     } catch (error) { alert('Erro ao registrar a ação.'); } finally { hideLoading(); }
 });
@@ -483,6 +511,9 @@ function atualizarSelects() {
             }
         });
         if (currentVal) selAcao.value = currentVal;
+        
+        // Dispara o evento change para garantir que o checklist comece escondido
+        selAcao.dispatchEvent(new Event('change'));
     }
 }
 
@@ -493,13 +524,14 @@ window.carregarAcaoParaAgendamento = function(id) {
     const sel = document.getElementById('acao-agendamento');
     if(!Array.from(sel.options).some(opt => opt.value === id)) { alert('Ação já registrada.'); return; }
     sel.value = id;
+    sel.dispatchEvent(new Event('change')); // Avisa ao sistema que a select mudou (para mostrar o checklist, se for Montagem)
+    
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-acoes').classList.add('active');
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('[data-tab="acoes"]').classList.add('active');
 };
 
- // ====== DASHBOARD ======
 let chartTipo = null, chartEscola = null;
 
 function atualizarDashboard() {
@@ -584,69 +616,19 @@ function atualizarDashboard() {
         data: { labels: escolasNomes, datasets: [{ data: contagens, backgroundColor: ['#3b82f6', '#0f3b5e', '#64748b', '#94a3b8', '#cbd5e1'] }] },
         options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
     });
+
+    // Chama a renderização da barra de progresso sempre que o dashboard for atualizado
+    renderProgressoImplantacao();
 }
 
-// ====== GERAR RELATÓRIO PDF ======
-document.getElementById('gerar-relatorio').addEventListener('click', () => {
-    const escolaId = document.getElementById('relatorio-escola').value;
-    if (!escolaId) { alert('Por favor, selecione uma escola.'); return; }
-    
-    const dataInicio = document.getElementById('relatorio-data-inicio').value;
-    const dataFim = document.getElementById('relatorio-data-fim').value;
-
-    let acoesFiltradas = DB.acoes.filter(a => a.EscolaID === escolaId);
-    if (dataInicio) acoesFiltradas = acoesFiltradas.filter(a => excelDateToISO(a.DataRegistro || a.Data) >= dataInicio);
-    if (dataFim) acoesFiltradas = acoesFiltradas.filter(a => { const d = excelDateToISO(a.DataRegistro || a.Data); return d && d <= dataFim; });
-
-    const escola = getEscolaById(escolaId);
-    let totalHoras = 0, linhasHtml = '';
-
-    if (acoesFiltradas.length === 0) linhasHtml = '<tr><td colspan="7" style="text-align:center;">Nenhuma ação no período.</td></tr>';
-    else {
-        acoesFiltradas.forEach(ac => {
-            const ag = getAgendamentoById(ac.AgendamentoID);
-            const evt = ag ? ag.TipoEvento : 'N/I', resp = ag ? `${ag.Responsavel} - ${ag.RespNome}` : 'N/I';
-            const h = Number(ac.CHAcao || ac.CargaHoraria || 0); totalHoras += h;
-            linhasHtml += `<tr><td>${evt}</td><td>${resp}</td><td>${ac.Tipo || ''}</td><td>${excelDateToDate(ac.DataRegistro || ac.Data)}</td><td>${h}h</td><td>${ac.Descricao || ''}</td><td><a href="${ac.Fotos || '#'}" target="_blank">Ver Fotos</a></td></tr>`;
-        });
-    }
-
-    const relatorioHTML = `
-        <!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório</title>
-        <style>body{font-family:Arial;margin:40px;}.header{display:flex;justify-content:space-between;border-bottom:2px solid #0f3b5e;padding-bottom:15px;margin-bottom:20px;}
-        .logo{max-height:60px;}h2{color:#0f3b5e;margin:0;}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:12px;}
-        th{background:#0f3b5e;color:#fff;padding:10px;text-align:left;}td{padding:8px;border-bottom:1px solid #ddd;}
-        .total{font-weight:bold;margin-top:20px;text-align:right;color:#0f3b5e;font-size:16px;}
-        @media print{@page{margin:1.5cm;}body{margin:0;}}</style></head><body onload="window.print();">
-        <div class="header"><img src="/images/logozmaker.png" class="logo"><div style="text-align:right;"><h2>Relatório de Atendimentos ZMaker</h2>
-        <div>Escola: ${escola ? escola.NomeFantasia : 'N/E'}</div><div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div></div></div>
-        <table><thead><tr><th>Evento Agendado</th><th>Responsável</th><th>Tipo Executado</th><th>Data</th><th>C. Horária</th><th>Descrição</th><th>Fotos</th></tr></thead><tbody>${linhasHtml}</tbody></table>
-        <div class="total">Total de CH Executada: ${totalHoras}h</div></body></html>`;
-
-    const janela = window.open('', '_blank'); janela.document.write(relatorioHTML); janela.document.close();
-});
-
-document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.nav-btn, .tab-content').forEach(e => e.classList.remove('active'));
-        btn.classList.add('active'); document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-        if (btn.dataset.tab === 'relatorios' || btn.dataset.tab === 'logistica') atualizarSelects();
-    });
-});
-
-document.getElementById('acao-fotos').addEventListener('change', function() { document.getElementById('foto-count').textContent = this.files.length + ' arquivo(s)'; });
-
 // ====== RÉGUA DE PROGRESSO (STATUS DE IMPLANTAÇÃO) ======
-
 function calcularStatusEscola(escolaId) {
-    // 1. Verifica Logística
     const logs = DB.logistica.filter(l => String(l.EscolaID) === String(escolaId));
-    const log = logs.length > 0 ? logs[logs.length - 1] : null; // Pega o último
+    const log = logs.length > 0 ? logs[logs.length - 1] : null; 
     
     const adesivacaoOk = log && log.Adesivacao && log.Adesivacao.includes('Concluído');
     const materialOk = log && log.MaterialEntregue && log.MaterialEntregue.includes('Concluído');
     
-    // 2. Verifica Ações (Formações e Montagens)
     const acoesEscola = DB.acoes.filter(a => String(a.EscolaID) === String(escolaId));
     
     const montagemOk = acoesEscola.some(a => {
@@ -659,10 +641,9 @@ function calcularStatusEscola(escolaId) {
         return ag && (ag.TipoEvento || ag.tipoEvento) === 'Formação Inicial/Continuada';
     });
 
-    // 3. Calcula Progresso
     let progresso = 10; 
     let statusAtual = "Aguardando Logística";
-    let cor = "#3b82f6"; // Azul padrão
+    let cor = "#3b82f6"; 
     
     let marcos = 0;
     if (adesivacaoOk) marcos++;
@@ -672,8 +653,8 @@ function calcularStatusEscola(escolaId) {
 
     if (marcos === 1) { progresso = 35; statusAtual = "Logística em Andamento"; }
     if (marcos === 2) { progresso = 60; statusAtual = "Infra e Materiais Entregues"; }
-    if (marcos === 3) { progresso = 80; statusAtual = "Equipamentos Montados"; cor = "#f59e0b"; } // Amarelo
-    if (marcos === 4) { progresso = 100; statusAtual = "ZMaker Lab Operando 🚀"; cor = "#10b981"; } // Verde
+    if (marcos === 3) { progresso = 80; statusAtual = "Equipamentos Montados"; cor = "#f59e0b"; } 
+    if (marcos === 4) { progresso = 100; statusAtual = "ZMaker Lab Operando 🚀"; cor = "#10b981"; } 
 
     return { progresso, statusAtual, cor, adesivacaoOk, materialOk, montagemOk, formacaoOk };
 }
@@ -681,7 +662,8 @@ function calcularStatusEscola(escolaId) {
 function renderProgressoImplantacao() {
     const escolaFiltro = document.getElementById('dashboard-escola').value;
     const container = document.getElementById('lista-progresso-escolas');
-    
+    if(!container) return; // Segurança para caso o HTML não tenha carregado
+
     let escolasExibir = DB.escolas;
     if (escolaFiltro) {
         escolasExibir = DB.escolas.filter(e => String(e.ID) === String(escolaFiltro));
@@ -718,4 +700,64 @@ function renderProgressoImplantacao() {
     
     container.innerHTML = html;
 }
+
+// ====== GERAR RELATÓRIO PDF ======
+document.getElementById('gerar-relatorio').addEventListener('click', () => {
+    const escolaId = document.getElementById('relatorio-escola').value;
+    if (!escolaId) { alert('Por favor, selecione uma escola.'); return; }
+    
+    const dataInicio = document.getElementById('relatorio-data-inicio').value;
+    const dataFim = document.getElementById('relatorio-data-fim').value;
+
+    let acoesFiltradas = DB.acoes.filter(a => String(a.EscolaID) === String(escolaId));
+    if (dataInicio) acoesFiltradas = acoesFiltradas.filter(a => excelDateToISO(a.DataRegistro || a.Data) >= dataInicio);
+    if (dataFim) acoesFiltradas = acoesFiltradas.filter(a => { const d = excelDateToISO(a.DataRegistro || a.Data); return d && d <= dataFim; });
+
+    const escola = getEscolaById(escolaId);
+    let totalHoras = 0, linhasHtml = '';
+
+    if (acoesFiltradas.length === 0) linhasHtml = '<tr><td colspan="7" style="text-align:center;">Nenhuma ação no período.</td></tr>';
+    else {
+        acoesFiltradas.forEach(ac => {
+            const ag = getAgendamentoById(ac.AgendamentoID);
+            const evt = ag ? ag.TipoEvento : 'N/I', resp = ag ? `${ag.Responsavel} - ${ag.RespNome}` : 'N/I';
+            const h = Number(ac.CHAcao || ac.CargaHoraria || 0); totalHoras += h;
+            
+            // Corrige a formatação para que quebras de linha na descrição (como as do checklist) fiquem bonitas no PDF
+            let desc = ac.Descricao || ac.descricao || '';
+            desc = desc.replace(/\n/g, '<br>');
+            
+            linhasHtml += `<tr><td>${evt}</td><td>${resp}</td><td>${ac.Tipo || ''}</td><td>${excelDateToDate(ac.DataRegistro || ac.Data)}</td><td>${h}h</td><td style="min-width: 250px;">${desc}</td><td><a href="${ac.Fotos || '#'}" target="_blank">Ver Fotos</a></td></tr>`;
+        });
+    }
+
+    const relatorioHTML = `
+        <!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório</title>
+        <style>body{font-family:Arial;margin:40px;}.header{display:flex;justify-content:space-between;border-bottom:2px solid #0f3b5e;padding-bottom:15px;margin-bottom:20px;}
+        .logo{max-height:60px;}h2{color:#0f3b5e;margin:0;}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:12px;}
+        th{background:#0f3b5e;color:#fff;padding:10px;text-align:left;}td{padding:8px;border-bottom:1px solid #ddd;vertical-align:top;}
+        .total{font-weight:bold;margin-top:20px;text-align:right;color:#0f3b5e;font-size:16px;}
+        @media print{@page{margin:1.5cm;}body{margin:0;}}</style></head><body onload="window.print();">
+        <div class="header"><img src="/images/logozmaker.png" class="logo"><div style="text-align:right;"><h2>Relatório de Atendimentos ZMaker</h2>
+        <div>Escola: ${escola ? escola.NomeFantasia : 'N/E'}</div><div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div></div></div>
+        <table><thead><tr><th>Evento Agendado</th><th>Responsável</th><th>Tipo Executado</th><th>Data</th><th>C. Horária</th><th>Descrição</th><th>Fotos</th></tr></thead><tbody>${linhasHtml}</tbody></table>
+        <div class="total">Total de CH Executada: ${totalHoras}h</div></body></html>`;
+
+    const janela = window.open('', '_blank'); janela.document.write(relatorioHTML); janela.document.close();
+});
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-btn, .tab-content').forEach(e => e.classList.remove('active'));
+        btn.classList.add('active'); document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'relatorios' || btn.dataset.tab === 'logistica' || btn.dataset.tab === 'dashboard') atualizarSelects();
+    });
+});
+
+document.getElementById('aplicar-filtros-dash').addEventListener('click', atualizarDashboard);
+document.querySelectorAll('#dashboard-escola, #dashboard-data-inicio, #dashboard-data-fim').forEach(el => {
+    el.addEventListener('change', atualizarDashboard);
+});
+
+// ====== INICIALIZAÇÃO FINAL ======
 initData();
