@@ -50,42 +50,40 @@ async function callAPI(url, method = 'GET', data = null) {
 
 // ====== FUNÇÕES DE CRUD ======
 async function getEscolas() {
-    if (!API.getEscolas || API.getEscolas.trim() === '') return [];
+    if (!API.getEscolas) return [];
     const response = await callAPI(API.getEscolas, 'GET');
     return response.value || response;
 }
-
-async function createEscola(dados) {
-    return await callAPI(API.postEscola, 'POST', dados);
-}
+async function createEscola(dados) { return await callAPI(API.postEscola, 'POST', dados); }
 
 async function getAgendamentos() {
-    if (!API.getAgendamentos || API.getAgendamentos.trim() === '') return [];
+    if (!API.getAgendamentos) return [];
     const response = await callAPI(API.getAgendamentos, 'GET');
     return response.value || response;
 }
-
-async function createAgendamento(dados) {
-    return await callAPI(API.postAgendamento, 'POST', dados);
-}
+async function createAgendamento(dados) { return await callAPI(API.postAgendamento, 'POST', dados); }
 
 async function getAcoes() {
-    if (!API.getAcoes || API.getAcoes.trim() === '') {
-        console.warn('⚠️ URL getAcoes não está configurada no config.js!');
-        return [];
-    }
+    if (!API.getAcoes) return [];
     const response = await callAPI(API.getAcoes, 'GET');
     return response.value || response;
 }
+async function createAcao(dados) { return await callAPI(API.postAcao, 'POST', dados); }
 
-async function createAcao(dados) {
-    return await callAPI(API.postAcao, 'POST', dados);
+// CRUD Logística
+async function getLogistica() {
+    if (!API.getLogistica) return [];
+    try {
+        const response = await callAPI(API.getLogistica, 'GET');
+        return response.value || response;
+    } catch(e) {
+        console.warn("API de Logística não configurada ou vazia.");
+        return [];
+    }
 }
+async function createLogistica(dados) { return await callAPI(API.postLogistica, 'POST', dados); }
 
-// A função de Gerar Relatório pelo Power Automate foi removida, 
-// pois agora fazemos o HTML nativo mais rápido e bonito abaixo.
-
-// ====== CONVERSÃO INTELIGENTE DE DATAS ======
+// ====== CONVERSÃO DE DATAS ======
 function excelDateToDate(serial) {
     if (serial === undefined || serial === null || serial === '') return '';
     let val = String(serial).trim();
@@ -110,26 +108,15 @@ function excelDateToDate(serial) {
 function excelDateToISO(serial) {
     if (!serial) return '';
     let val = String(serial).trim();
-    if (val.includes('-')) {
-        return val.split('T')[0];
-    }
+    if (val.includes('-')) return val.split('T')[0];
     if (val.includes('/')) {
         const p = val.split(' ')[0].split('/');
         if (p.length === 3) {
-            let p0 = parseInt(p[0], 10);
-            let p1 = parseInt(p[1], 10);
-            let p2 = p[2].length === 2 ? '20' + p[2] : p[2];
+            let p0 = parseInt(p[0], 10), p1 = parseInt(p[1], 10), p2 = p[2].length === 2 ? '20' + p[2] : p[2];
             let dia, mes;
-            if (p0 > 12) {
-                dia = String(p0).padStart(2, '0');
-                mes = String(p1).padStart(2, '0');
-            } else if (p1 > 12) {
-                mes = String(p0).padStart(2, '0');
-                dia = String(p1).padStart(2, '0');
-            } else {
-                dia = String(p0).padStart(2, '0');
-                mes = String(p1).padStart(2, '0');
-            }
+            if (p0 > 12) { dia = String(p0).padStart(2, '0'); mes = String(p1).padStart(2, '0'); } 
+            else if (p1 > 12) { mes = String(p0).padStart(2, '0'); dia = String(p1).padStart(2, '0'); } 
+            else { dia = String(p0).padStart(2, '0'); mes = String(p1).padStart(2, '0'); }
             return `${p2}-${mes}-${dia}`;
         }
     }
@@ -137,67 +124,44 @@ function excelDateToISO(serial) {
         const epoch = new Date(1899, 11, 30);
         const date = new Date(epoch.getTime() + (Number(val) * 86400000));
         if (isNaN(date.getTime())) return val;
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${year}-${month}-${day}`;
-    }
-    return val;
-}
-
-function excelTimeToTime(serial) {
-    if (serial === undefined || serial === null || serial === '') return '';
-    let val = String(serial).trim();
-    if (val.includes(':')) return val.substring(0, 5); 
-    val = val.replace(',', '.');
-    if (!isNaN(Number(val))) {
-        const totalSeconds = Math.round(Number(val) * 86400);
-        const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-        return `${hours}:${minutes}`;
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     }
     return val;
 }
 
 function formatExcelDateTime(dateVal, timeVal) {
     const dataFormatada = excelDateToDate(dateVal);
-    const horaFormatada = excelTimeToTime(timeVal);
-    if (dataFormatada && horaFormatada) return `${dataFormatada} às ${horaFormatada}`;
+    let timeValStr = String(timeVal || '').trim();
+    if(timeValStr.includes(':')) timeValStr = timeValStr.substring(0,5);
+    else if(!isNaN(Number(timeValStr)) && timeValStr !== '') {
+        const totalSecs = Math.round(Number(timeValStr.replace(',','.')) * 86400);
+        timeValStr = `${String(Math.floor(totalSecs/3600)).padStart(2,'0')}:${String(Math.floor((totalSecs%3600)/60)).padStart(2,'0')}`;
+    } else { timeValStr = ''; }
+    
+    if (dataFormatada && timeValStr) return `${dataFormatada} às ${timeValStr}`;
     if (dataFormatada) return dataFormatada;
-    if (horaFormatada) return horaFormatada;
-    return '';
+    return timeValStr;
 }
 
-// ====== CEP ======
+// ====== BUSCA DE CEP ======
 async function buscarCEP(cep) {
     try {
         cep = cep.replace(/\D/g, '');
-        if (cep.length !== 8) {
-            alert('CEP deve ter 8 dígitos.');
-            return null;
-        }
+        if (cep.length !== 8) { alert('CEP deve ter 8 dígitos.'); return null; }
         const btn = document.getElementById('buscar-cep');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner"></span> Buscando...';
-        btn.disabled = true;
-
-        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-        const data = await response.json();
-
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-
-        if (data.erro) {
-            alert('CEP não encontrado.');
-            return null;
-        }
+        const txt = btn.innerHTML;
+        btn.innerHTML = 'Buscando...'; btn.disabled = true;
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await res.json();
+        btn.innerHTML = txt; btn.disabled = false;
+        if (data.erro) { alert('CEP não encontrado.'); return null; }
         return data;
-    } catch (error) {
-        console.error('Erro ao buscar CEP:', error);
-        alert('Erro ao buscar CEP. Verifique sua conexão.');
-        return null;
-    }
+    } catch (e) { alert('Erro ao buscar CEP.'); return null; }
 }
+
+document.getElementById('buscar-cep').addEventListener('click', () => {
+    preencherEndereco(document.getElementById('escola-cep').value);
+});
 
 async function preencherEndereco(cep) {
     const dados = await buscarCEP(cep);
@@ -209,212 +173,193 @@ async function preencherEndereco(cep) {
     document.getElementById('escola-complemento').focus();
 }
 
-document.getElementById('buscar-cep').addEventListener('click', () => {
-    const cep = document.getElementById('escola-cep').value;
-    preencherEndereco(cep);
-});
-
-let timeoutId = null;
-document.getElementById('escola-cep').addEventListener('input', function() {
-    const cep = this.value.replace(/\D/g, '');
-    if (cep.length === 8) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            preencherEndereco(cep);
-        }, 500);
-    }
-});
-
 // ====== BANCO DE DADOS LOCAL ======
-const DB = { escolas: [], agendamentos: [], acoes: [], _id: 1000 };
+const DB = { escolas: [], agendamentos: [], acoes: [], logistica: [] };
 
-// ====== INICIALIZAR DADOS (via API) ======
+// ====== INICIALIZAR DADOS ======
 async function initData() {
     try {
-        const [escolas, agendamentos, acoes] = await Promise.all([
-            getEscolas(),
-            getAgendamentos(),
-            getAcoes()
+        const [escolas, agendamentos, acoes, logistica] = await Promise.all([
+            getEscolas(), getAgendamentos(), getAcoes(), getLogistica()
         ]);
         
-        DB.escolas = (Array.isArray(escolas) ? escolas : []).map((e, index) => {
-            let rawId = e.ID || e.id || e.Id || e.idEscola || (index + 1);
-            return { ...e, ID: String(rawId).trim() };
-        });
-
-        DB.agendamentos = (Array.isArray(agendamentos) ? agendamentos : []).map((a, index) => {
-            let rawId = a.ID || a.id || a.Id || (index + 1);
-            let escolaIdRef = a.EscolaID || a.escolaID || a.escolaId || '';
-            return { ...a, ID: String(rawId).trim(), EscolaID: String(escolaIdRef).trim() };
-        });
-
-        DB.acoes = (Array.isArray(acoes) ? acoes : []).map((a, index) => {
-            let rawId = a.ID || a.id || a.Id || (index + 1);
-            let agendamentoIdRef = a.AgendamentoID || a.agendamentoID || a.agendamentoId || '';
-            let escolaIdRef = a.EscolaID || a.escolaID || a.escolaId || '';
-            return { ...a, ID: String(rawId).trim(), AgendamentoID: String(agendamentoIdRef).trim(), EscolaID: String(escolaIdRef).trim() };
-        });
+        DB.escolas = (Array.isArray(escolas) ? escolas : []).map((e, i) => ({ ...e, ID: String(e.ID || e.id || e.idEscola || i + 1).trim() }));
+        DB.agendamentos = (Array.isArray(agendamentos) ? agendamentos : []).map((a, i) => ({ ...a, ID: String(a.ID || a.id || i + 1).trim(), EscolaID: String(a.EscolaID || a.escolaID || '').trim() }));
+        DB.acoes = (Array.isArray(acoes) ? acoes : []).map((a, i) => ({ ...a, ID: String(a.ID || a.id || i + 1).trim(), AgendamentoID: String(a.AgendamentoID || a.agendamentoID || '').trim(), EscolaID: String(a.EscolaID || a.escolaID || '').trim() }));
+        DB.logistica = (Array.isArray(logistica) ? logistica : []).map(l => ({ ...l, EscolaID: String(l.EscolaID || l.escolaID || '').trim() }));
         
-        console.log('✅ Dados carregados da API do Excel.');
-    } catch (error) {
-        console.error('❌ Erro ao carregar dados da API:', error);
-    }
+        console.log('✅ Dados carregados.');
+    } catch (error) { console.error('❌ Erro:', error); }
     
     atualizarSelects();
     renderEscolas();
     renderAgendamentos();
     renderAcoes();
     atualizarDashboard();
+    renderPainelLogistica();
+    // Adiciona o render das réguas de implantação no fluxo do dashboard
+    renderProgressoImplantacao();
 }
+
 
 // ====== HELPERS ======
 function getEscolaById(id) {
     if (!id) return null;
-    const searchId = String(id).trim();
-    return DB.escolas.find(e => {
-        const eId = String(e.ID || e.id || '').trim();
-        return eId === searchId || eId.startsWith(searchId) || searchId.startsWith(eId);
-    });
+    return DB.escolas.find(e => e.ID === String(id).trim() || e.ID.startsWith(String(id).trim()));
 }
-
 function getAgendamentoById(id) {
     if (!id) return null;
-    const searchId = String(id).trim();
-    return DB.agendamentos.find(a => {
-        const aId = String(a.ID || a.id || '').trim();
-        return aId === searchId || aId.startsWith(searchId) || searchId.startsWith(aId);
-    });
+    return DB.agendamentos.find(a => a.ID === String(id).trim());
 }
-
 function getEscolasOptions() {
+    if (!DB.escolas.length) return '<option value="">Nenhuma escola cadastrada</option>';
     let optionsHtml = '<option value="">Selecione uma escola...</option>';
-    if (!DB.escolas || !DB.escolas.length) return '<option value="">Nenhuma escola cadastrada</option>';
-    
-    const listaHtml = DB.escolas.map((e, index) => {
-        let id = e.ID || e.id || (index + 1);
-        const nome = e.NomeFantasia || e.fantasia || e.nomeFantasia || e.RazaoSocial || e.razao || 'Escola sem nome';
-        const cidade = e.Cidade || e.cidade || 'Sem cidade';
-        return `<option value="${id}">${nome} (${cidade})</option>`;
-    }).join('');
-    
-    return optionsHtml + listaHtml;
+    optionsHtml += DB.escolas.map(e => `<option value="${e.ID}">${e.NomeFantasia || e.RazaoSocial || 'Sem nome'} (${e.Cidade || '—'})</option>`).join('');
+    return optionsHtml;
 }
 
-// ====== RENDERIZAÇÃO ======
+// ====== RENDERIZAÇÃO DE TABELAS ======
 function renderEscolas() {
     const container = document.getElementById('lista-escolas');
-    if (!DB.escolas.length) {
-        container.innerHTML = '<p>Nenhuma escola encontrada no Excel.</p>';
-        return;
-    }
-    let html = `<table><thead><tr>
-        <th>CNPJ</th><th>Razão Social</th><th>Fantasia</th>
-        <th>Endereço</th><th>Bairro</th><th>Cidade/UF</th>
-        <th>Contato</th><th>ZMaker</th>
-    </tr></thead><tbody>`;
+    if (!DB.escolas.length) { container.innerHTML = '<p>Nenhuma escola encontrada.</p>'; return; }
+    let html = `<table><thead><tr><th>Razão Social</th><th>Fantasia</th><th>Cidade/UF</th><th>ZMaker</th></tr></thead><tbody>`;
     DB.escolas.forEach(e => {
-        html += `<tr>
-            <td>${e.CNPJ || e.cnpj || ''}</td>
-            <td>${e.RazaoSocial || e.razao || e.razaoSocial || ''}</td>
-            <td>${e.NomeFantasia || e.fantasia || e.nomeFantasia || ''}</td>
-            <td>${e.Endereco || e.endereco || ''}, ${e.CEP || e.cep || ''}</td>
-            <td>${e.Bairro || e.bairro || ''}</td>
-            <td>${e.Cidade || e.cidade || ''}/${e.UF || e.uf || ''}</td>
-            <td>${e.ContatoNome || e.contatoNome || ''}</td>
-            <td>${e.TipoZMaker || e.tipoZmaker || e.tipoZMaker || ''}</td>
-        </tr>`;
+        html += `<tr><td>${e.RazaoSocial || ''}</td><td>${e.NomeFantasia || ''}</td><td>${e.Cidade || ''}/${e.UF || ''}</td><td>${e.TipoZMaker || ''}</td></tr>`;
     });
-    html += '</tbody></table>';
-    container.innerHTML = html;
+    container.innerHTML = html + '</tbody></table>';
 }
 
 function renderAgendamentos() {
     const container = document.getElementById('lista-agendamentos');
-    if (!DB.agendamentos.length) {
-        container.innerHTML = '<p>Nenhum agendamento encontrado no Excel.</p>';
-        return;
-    }
-    
-    let html = `<table><thead><tr>
-        <th>Escola</th><th>Tipo</th><th>Data/Hora</th>
-        <th>Responsável</th><th>Contato</th><th>Ações</th>
-    </tr></thead><tbody>`;
-    
+    if (!DB.agendamentos.length) { container.innerHTML = '<p>Nenhum agendamento encontrado.</p>'; return; }
+    let html = `<table><thead><tr><th>Escola</th><th>Tipo</th><th>Data/Hora</th><th>Responsável</th><th>Ações</th></tr></thead><tbody>`;
     DB.agendamentos.forEach(a => {
-        const escolaId = a.EscolaID || a.escolaID || a.escolaId;
-        const escola = getEscolaById(escolaId);
-        const nomeEscola = escola ? (escola.NomeFantasia || escola.fantasia || escola.RazaoSocial || 'N/E') : 'N/E';
-        let dataHora = formatExcelDateTime(a.Data, a.Hora);
-        const agendamentoId = a.ID || a.id;
-
-        // Verifica se o agendamento já tem ação. Se tiver, muda o botão.
-        const jaRegistrado = DB.acoes.some(ac => String(ac.AgendamentoID || ac.agendamentoID || ac.agendamentoId).trim() === String(agendamentoId).trim());
-        
-        let botaoAcao = `<button class="btn-primary" style="padding:4px 12px;font-size:0.8rem;" onclick="carregarAcaoParaAgendamento('${agendamentoId}')">Registrar Ação</button>`;
-        if (jaRegistrado) {
-            botaoAcao = `<span style="color: #10b981; font-weight: bold; font-size: 0.9rem;">✓ Concluído</span>`;
-        }
-        
-        html += `<tr>
-            <td>${nomeEscola}</td>
-            <td>${a.TipoEvento || a.tipoEvento || ''}</td>
-            <td>${dataHora}</td>
-            <td>${a.Responsavel || a.responsavel || ''} - ${a.RespNome || a.respNome || ''}</td>
-            <td>${a.ContatoNome || a.contatoNome || '—'}</td>
-            <td>${botaoAcao}</td>
-        </tr>`;
+        const esc = getEscolaById(a.EscolaID);
+        const jaRegistrado = DB.acoes.some(ac => ac.AgendamentoID === a.ID);
+        let btn = jaRegistrado ? `<span style="color:#10b981;font-weight:bold;">✓ Concluído</span>` : `<button class="btn-primary" onclick="carregarAcaoParaAgendamento('${a.ID}')">Registrar Ação</button>`;
+        html += `<tr><td>${esc ? esc.NomeFantasia : 'N/E'}</td><td>${a.TipoEvento || ''}</td><td>${formatExcelDateTime(a.Data, a.Hora)}</td><td>${a.RespNome || ''}</td><td>${btn}</td></tr>`;
     });
-    html += '</tbody></table>';
-    container.innerHTML = html;
+    container.innerHTML = html + '</tbody></table>';
 }
 
 function renderAcoes() {
     const container = document.getElementById('lista-acoes');
-    if (!DB.acoes.length) {
-        container.innerHTML = '<p>Nenhuma ação registrada no Excel.</p>';
-        return;
-    }
-    let html = `<table><thead><tr>
-        <th>Escola</th><th>Tipo</th><th>Responsável</th><th>Data</th><th>Horas</th><th>Descrição</th><th>Fotos</th>
-    </tr></thead><tbody>`;
-    
+    if (!DB.acoes.length) { container.innerHTML = '<p>Nenhuma ação registrada.</p>'; return; }
+    let html = `<table><thead><tr><th>Escola</th><th>Tipo</th><th>Data</th><th>Horas</th><th>Descrição</th></tr></thead><tbody>`;
     DB.acoes.forEach(ac => {
-        const agendamentoId = ac.AgendamentoID || ac.agendamentoID || ac.agendamentoId;
-        const escolaId = ac.EscolaID || ac.escolaID || ac.escolaId;
-        const agendamento = getAgendamentoById(agendamentoId);
-        const escola = getEscolaById(escolaId);
-        
-        const nomeEscola = escola ? (escola.NomeFantasia || escola.fantasia || 'N/E') : 'N/E';
-        const responsavel = agendamento ? `${agendamento.Responsavel || agendamento.responsavel} - ${agendamento.RespNome || agendamento.respNome}` : 'N/I';
-        
-        let dataRegRaw = ac.DataRegistro || ac.dataRegistro || ac.Data || ac.data || '';
-        let dataExibicao = excelDateToDate(dataRegRaw);
-        let horas = ac.CHAcao || ac.chAcao || ac.CargaHoraria || ac.cargaHoraria || ac.Horas || ac.horas || '0';
-
-        let qtdFotos = 0;
-        try {
-            if (ac.Fotos) {
-                qtdFotos = Array.isArray(ac.Fotos) ? ac.Fotos.length : String(ac.Fotos).split(',').filter(f => f.trim() !== '').length;
-            } else if (ac.fotos) {
-                qtdFotos = Array.isArray(ac.fotos) ? ac.fotos.length : String(ac.fotos).split(',').filter(f => f.trim() !== '').length;
-            }
-        } catch(e) {}
-        
-        html += `<tr>
-            <td>${nomeEscola}</td>
-            <td>${ac.Tipo || ac.tipo || ''}</td>
-            <td>${responsavel}</td>
-            <td>${dataExibicao}</td>
-            <td>${horas}h</td>
-            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ac.Descricao || ac.descricao || ''}</td>
-            <td>${qtdFotos > 0 ? `<a href="#" onclick="alert('URLs salvas no Excel.')" style="color:#0f3b5e;font-weight:bold;">${qtdFotos} foto(s)</a>` : '0 foto(s)'}</td>
-        </tr>`;
+        const esc = getEscolaById(ac.EscolaID);
+        html += `<tr><td>${esc ? esc.NomeFantasia : 'N/E'}</td><td>${ac.Tipo || ''}</td><td>${excelDateToDate(ac.DataRegistro || ac.Data)}</td><td>${ac.CHAcao || ac.CargaHoraria || 0}h</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ac.Descricao || ''}</td></tr>`;
     });
-    html += '</tbody></table>';
-    container.innerHTML = html;
+    container.innerHTML = html + '</tbody></table>';
 }
 
-// ====== FORMULÁRIOS ======
+function renderPainelLogistica() {
+    const container = document.getElementById('painel-gerencial-logistica');
+    const filtroEscola = document.getElementById('filtro-gerencial-escola').value;
+    
+    let listaMostrar = DB.escolas;
+    if (filtroEscola) listaMostrar = DB.escolas.filter(e => e.ID === filtroEscola);
+    
+    if (!listaMostrar.length) { container.innerHTML = '<p>Nenhuma escola para exibir.</p>'; return; }
+    
+    let html = `<table><thead><tr>
+        <th>Escola</th><th>Tensão</th><th>Faseada</th><th>Status Material</th><th>Adesivação</th><th>Previsão Entrega</th>
+    </tr></thead><tbody>`;
+    
+    listaMostrar.forEach(e => {
+        // Pega o último registro de logística dessa escola (caso haja mais de um na planilha)
+        const logsEscola = DB.logistica.filter(l => l.EscolaID === e.ID);
+        const log = logsEscola.length > 0 ? logsEscola[logsEscola.length - 1] : null;
+        
+        const tensao = log ? (log.Tensao || log.tensao || '—') : '—';
+        const faseada = log ? (log.Faseada || log.faseada || '—') : '—';
+        const material = log ? (log.MaterialEntregue || log.Material || log.material || 'Pendente') : 'Pendente';
+        const adesivacao = log ? (log.Adesivacao || log.adesivacao || 'Pendente') : 'Pendente';
+        const previsao = log && (log.PrevisaoEntrega || log.previsao) ? excelDateToDate(log.PrevisaoEntrega || log.previsao) : '—';
+        
+        // Estilização de badges para visual rápido
+        let badgeMat = `<span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #f1f5f9; color: #475569;">${material}</span>`;
+        if(material.includes('Concluído')) badgeMat = `<span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #dcfce7; color: #166534;">${material}</span>`;
+        else if(material.includes('Trânsito') || material.includes('Separação')) badgeMat = `<span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #fef9c3; color: #854d0e;">${material}</span>`;
+
+        let badgeAdes = `<span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #f1f5f9; color: #475569;">${adesivacao}</span>`;
+        if(adesivacao.includes('Concluído')) badgeAdes = `<span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #dcfce7; color: #166534;">${adesivacao}</span>`;
+        else if(adesivacao.includes('Andamento')) badgeAdes = `<span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #fef9c3; color: #854d0e;">${adesivacao}</span>`;
+
+        html += `<tr>
+            <td style="font-weight: bold; color:#0f3b5e;">${e.NomeFantasia || 'Sem Nome'}</td>
+            <td>${tensao}</td>
+            <td>${faseada}</td>
+            <td>${badgeMat}</td>
+            <td>${badgeAdes}</td>
+            <td>${previsao}</td>
+        </tr>`;
+    });
+    
+    container.innerHTML = html + '</tbody></table>';
+}
+
+// ====== LÓGICA DO FORMULÁRIO DE LOGÍSTICA (AUTO-PREENCHIMENTO) ======
+document.getElementById('logistica-escola').addEventListener('change', function() {
+    const escolaId = this.value;
+    const form = document.getElementById('form-logistica');
+    if(!escolaId) { form.reset(); return; }
+
+    // Procura se já tem dados salvos para autocompletar
+    const logsEscola = DB.logistica.filter(l => l.EscolaID === escolaId);
+    if(logsEscola.length > 0) {
+        const logInfo = logsEscola[logsEscola.length - 1]; // Pega o mais recente
+        document.getElementById('log-tensao').value = logInfo.Tensao || logInfo.tensao || '';
+        document.getElementById('log-faseada').value = logInfo.Faseada || logInfo.faseada || '';
+        document.getElementById('log-adesivacao').value = logInfo.Adesivacao || logInfo.adesivacao || '';
+        document.getElementById('log-material').value = logInfo.MaterialEntregue || logInfo.Material || logInfo.material || '';
+        document.getElementById('log-previsao').value = excelDateToISO(logInfo.PrevisaoEntrega || logInfo.previsao);
+        document.getElementById('log-pedido-fases').value = logInfo.PedidoFases || logInfo.pedidoFases || '';
+        document.getElementById('log-pedido-bonificacao').value = logInfo.PedidoBonificacao || logInfo.pedidoBonificacao || '';
+    } else {
+        // Se não tiver, limpa os campos abaixo do select
+        document.getElementById('log-tensao').value = '';
+        document.getElementById('log-faseada').value = '';
+        document.getElementById('log-adesivacao').value = '';
+        document.getElementById('log-material').value = '';
+        document.getElementById('log-previsao').value = '';
+        document.getElementById('log-pedido-fases').value = '';
+        document.getElementById('log-pedido-bonificacao').value = '';
+    }
+});
+
+// ====== SALVAR LOGÍSTICA ======
+document.getElementById('form-logistica').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const escolaIdValue = document.getElementById('logistica-escola').value;
+    if (!escolaIdValue) { alert('Selecione uma escola.'); return; }
+
+    const dados = {
+        EscolaID: escolaIdValue,
+        Tensao: document.getElementById('log-tensao').value,
+        Faseada: document.getElementById('log-faseada').value,
+        Adesivacao: document.getElementById('log-adesivacao').value,
+        MaterialEntregue: document.getElementById('log-material').value,
+        PrevisaoEntrega: document.getElementById('log-previsao').value, // ISO yyyy-MM-dd
+        PedidoFases: document.getElementById('log-pedido-fases').value,
+        PedidoBonificacao: document.getElementById('log-pedido-bonificacao').value
+    };
+
+    showLoading(); 
+    try {
+        await createLogistica(dados);
+        await new Promise(r => setTimeout(r, 2000));
+        await initData(); // Atualiza a tela toda
+        alert('Informações de implantação salvas com sucesso!');
+    } catch (error) {
+        console.error(error);
+        alert('Erro ao salvar as informações logísticas. Verifique a configuração do Power Automate.');
+    } finally {
+        hideLoading(); 
+    }
+});
+
+// ====== FORMULÁRIOS RESTANTES ======
 document.getElementById('form-escola').addEventListener('submit', async (e) => {
     e.preventDefault();
     const dados = {
@@ -438,40 +383,24 @@ document.getElementById('form-escola').addEventListener('submit', async (e) => {
     showLoading(); 
     try {
         await createEscola(dados);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(r => setTimeout(r, 2000));
         await initData(); 
         document.getElementById('form-escola').reset();
         alert('Escola salva com sucesso!');
-    } catch (error) {
-        console.error(error);
-        alert('Erro ao salvar na nuvem. Verifique sua conexão.');
-    } finally {
-        hideLoading(); 
-    }
+    } catch (error) { alert('Erro ao salvar.'); } finally { hideLoading(); }
 });
 
-// ====== FORMULÁRIO DE AGENDAMENTO ======
 document.getElementById('form-agendamento').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const selectEscola = document.getElementById('agendamento-escola');
-    const escolaIdValue = selectEscola.value;
-    if (!escolaIdValue || escolaIdValue === '') {
-        alert('Por favor, selecione uma escola válida no menu.');
-        return;
-    }
-    
+    const escolaIdValue = document.getElementById('agendamento-escola').value;
     const rawData = document.getElementById('agendamento-data').value; 
     const rawHora = document.getElementById('agendamento-hora').value; 
-    
-    // Garante o formato limpo yyyy-MM-dd sem horas adicionais do input
-    const dataLimpa = rawData ? rawData.split('T')[0] : '';
-    const horaLimpa = rawHora ? rawHora.substring(0, 5) : '';
     
     const dados = {
         EscolaID: String(escolaIdValue).trim(), 
         TipoEvento: document.getElementById('agendamento-tipo-evento').value,
-        Data: dataLimpa, // Envia para o Excel em formato ISO (yyyy-MM-dd)
-        Hora: horaLimpa,
+        Data: rawData ? rawData.split('T')[0] : '', 
+        Hora: rawHora ? rawHora.substring(0, 5) : '',
         Responsavel: document.getElementById('agendamento-responsavel').value,
         RespNome: document.getElementById('agendamento-resp-nome').value,
         RespEmail: document.getElementById('agendamento-resp-email').value,
@@ -484,51 +413,26 @@ document.getElementById('form-agendamento').addEventListener('submit', async (e)
     showLoading(); 
     try {
         await createAgendamento(dados);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(r => setTimeout(r, 2000));
         await initData(); 
         document.getElementById('form-agendamento').reset();
-        alert('Agendamento criado com sucesso!');
-    } catch (error) {
-        console.error('❌ Erro:', error);
-        alert('Erro de conexão ao salvar o agendamento.');
-    } finally {
-        hideLoading(); 
-    }
+        alert('Agendamento criado!');
+    } catch (error) { alert('Erro ao salvar o agendamento.'); } finally { hideLoading(); }
 });
 
-// ====== FORMULÁRIO DE AÇÃO ======
 document.getElementById('form-acao').addEventListener('submit', async (e) => {
     e.preventDefault();
     const agendamentoIdValue = document.getElementById('acao-agendamento').value;
     const agendamento = getAgendamentoById(agendamentoIdValue);
+    if (!agendamento) { alert('Selecione um agendamento válido.'); return; }
     
-    if (!agendamento) { 
-        alert('Selecione um agendamento válido.'); 
-        return; 
-    }
-
-    const fotosInput = document.getElementById('acao-fotos');
-    const escolaId = agendamento.EscolaID || agendamento.escolaID || agendamento.escolaId;
-
-    const dataDigitada = document.getElementById('acao-data').value;
-    const cargaHoraria = document.getElementById('acao-horas').value;
-
-    if (!dataDigitada) {
-        alert('Por favor, informe a data de realização da ação.');
-        return;
-    }
-
     showLoading(); 
     try {
-        const filePromises = Array.from(fotosInput.files).map(file => {
+        const filePromises = Array.from(document.getElementById('acao-fotos').files).map(file => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = () => resolve({
-                    name: file.name,
-                    mimeType: file.type,
-                    contentBytes: reader.result.split(',')[1] 
-                });
+                reader.onload = () => resolve({ name: file.name, mimeType: file.type, contentBytes: reader.result.split(',')[1] });
                 reader.onerror = error => reject(error);
             });
         });
@@ -536,87 +440,58 @@ document.getElementById('form-acao').addEventListener('submit', async (e) => {
 
         const dados = {
             AgendamentoID: String(agendamentoIdValue).trim(),
-            EscolaID: String(escolaId).trim(),
+            EscolaID: String(agendamento.EscolaID).trim(),
             Tipo: document.getElementById('acao-tipo').value,
             Descricao: document.getElementById('acao-descricao').value,
-            DataRegistro: dataDigitada, // Envia para o Excel em formato ISO (yyyy-MM-dd)
-            CargaHoraria: Number(cargaHoraria) || 0, 
+            DataRegistro: document.getElementById('acao-data').value,
+            CargaHoraria: Number(document.getElementById('acao-horas').value) || 0, 
             Fotos: fotosBase64 
         };
 
         await createAcao(dados);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        await initData(); // Ao chamar initData, a select de ações é atualizada automaticamente
+        await new Promise(r => setTimeout(r, 2000));
+        await initData();
         document.getElementById('form-acao').reset();
         document.getElementById('foto-count').textContent = '0 arquivo(s)';
-        alert('Ação registrada com sucesso e imagens enviadas!');
-    } catch (error) {
-        console.error(error);
-        alert('Erro de conexão ao registrar a ação.');
-    } finally {
-        hideLoading(); 
-    }
+        alert('Ação registrada com sucesso!');
+    } catch (error) { alert('Erro ao registrar a ação.'); } finally { hideLoading(); }
 });
 
 // ====== ATUALIZAR SELECTS ======
 function atualizarSelects() {
-    const selects = ['agendamento-escola', 'dashboard-escola', 'relatorio-escola'];
+    const selects = ['agendamento-escola', 'dashboard-escola', 'relatorio-escola', 'logistica-escola', 'filtro-gerencial-escola'];
     selects.forEach(id => {
         const sel = document.getElementById(id);
         if (sel) {
             const currentVal = sel.value;
-            sel.innerHTML = getEscolasOptions();
-            if (currentVal && currentVal !== '') {
-                const existe = Array.from(sel.options).some(opt => opt.value === currentVal);
-                if (existe) sel.value = currentVal;
-                else sel.value = "";
-            } else {
-                sel.value = "";
-            }
+            sel.innerHTML = id === 'filtro-gerencial-escola' || id === 'dashboard-escola' || id === 'relatorio-escola' ? 
+                            '<option value="">Todas as Escolas</option>' + getEscolasOptions().replace('<option value="">Selecione uma escola...</option>', '') : 
+                            getEscolasOptions();
+            if (currentVal) sel.value = currentVal;
         }
     });
     
-    // Atualiza Select de Ações garantindo que não mostre agendamentos já realizados
     const selAcao = document.getElementById('acao-agendamento');
     if (selAcao) {
         const currentVal = selAcao.value;
         selAcao.innerHTML = '<option value="">Selecione um agendamento pendente...</option>';
-        
         DB.agendamentos.forEach(a => {
-            const idAg = a.ID || a.id;
-            
-            // Verifica se o ID deste agendamento já está em alguma ação registrada
-            const jaRegistrado = DB.acoes.some(ac => String(ac.AgendamentoID || ac.agendamentoID || ac.agendamentoId).trim() === String(idAg).trim());
-            
-            // Só adiciona na lista se não estiver registrado
+            const jaRegistrado = DB.acoes.some(ac => ac.AgendamentoID === a.ID);
             if (!jaRegistrado) {
-                const escolaId = a.EscolaID || a.escolaID || a.escolaId;
-                const escola = getEscolaById(escolaId);
-                const nome = escola ? (escola.NomeFantasia || escola.fantasia || 'N/E') : 'N/E';
-                const exibicaoAgend = formatExcelDateTime(a.Data, a.Hora);
-                
-                selAcao.innerHTML += `<option value="${idAg}">${nome} - ${a.TipoEvento || a.tipoEvento} (${exibicaoAgend})</option>`;
+                const esc = getEscolaById(a.EscolaID);
+                selAcao.innerHTML += `<option value="${a.ID}">${esc ? esc.NomeFantasia : 'N/E'} - ${a.TipoEvento} (${formatExcelDateTime(a.Data, a.Hora)})</option>`;
             }
         });
-        
-        if (currentVal && currentVal !== '') {
-            const existe = Array.from(selAcao.options).some(opt => opt.value === currentVal);
-            if (existe) selAcao.value = currentVal;
-        }
+        if (currentVal) selAcao.value = currentVal;
     }
 }
 
-// ====== NAVEGAÇÃO ======
+document.getElementById('filtro-gerencial-escola').addEventListener('change', renderPainelLogistica);
+
+// ====== DASHBOARD & NAVEGAÇÃO ======
 window.carregarAcaoParaAgendamento = function(id) {
     const sel = document.getElementById('acao-agendamento');
-    
-    // Se o agendamento clicado já não estiver na lista suspensa (porque foi concluído), recusa o carregamento.
-    const opcaoExiste = Array.from(sel.options).some(opt => opt.value === id);
-    if(!opcaoExiste) {
-        alert('Esta ação já foi registrada e não está mais pendente.');
-        return;
-    }
-
+    if(!Array.from(sel.options).some(opt => opt.value === id)) { alert('Ação já registrada.'); return; }
     sel.value = id;
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-acoes').classList.add('active');
@@ -624,7 +499,7 @@ window.carregarAcaoParaAgendamento = function(id) {
     document.querySelector('[data-tab="acoes"]').classList.add('active');
 };
 
-// ====== DASHBOARD ======
+ // ====== DASHBOARD ======
 let chartTipo = null, chartEscola = null;
 
 function atualizarDashboard() {
@@ -711,162 +586,136 @@ function atualizarDashboard() {
     });
 }
 
-// ====== RELATÓRIO DIRETO PELO NAVEGADOR (SEM POWER AUTOMATE) ======
+// ====== GERAR RELATÓRIO PDF ======
 document.getElementById('gerar-relatorio').addEventListener('click', () => {
     const escolaId = document.getElementById('relatorio-escola').value;
+    if (!escolaId) { alert('Por favor, selecione uma escola.'); return; }
+    
     const dataInicio = document.getElementById('relatorio-data-inicio').value;
     const dataFim = document.getElementById('relatorio-data-fim').value;
 
-    if (!escolaId) {
-        alert('Por favor, selecione uma escola para gerar o relatório.');
-        return;
-    }
+    let acoesFiltradas = DB.acoes.filter(a => a.EscolaID === escolaId);
+    if (dataInicio) acoesFiltradas = acoesFiltradas.filter(a => excelDateToISO(a.DataRegistro || a.Data) >= dataInicio);
+    if (dataFim) acoesFiltradas = acoesFiltradas.filter(a => { const d = excelDateToISO(a.DataRegistro || a.Data); return d && d <= dataFim; });
 
-    // 1. Filtrar os dados localmente
-    let acoesFiltradas = DB.acoes.filter(a => String(a.EscolaID || a.escolaID || a.escolaId) === String(escolaId));
-
-    if (dataInicio) {
-        acoesFiltradas = acoesFiltradas.filter(a => {
-            const iso = excelDateToISO(a.DataRegistro || a.dataRegistro || a.Data || a.data);
-            return iso >= dataInicio;
-        });
-    }
-    if (dataFim) {
-        acoesFiltradas = acoesFiltradas.filter(a => {
-            const iso = excelDateToISO(a.DataRegistro || a.dataRegistro || a.Data || a.data);
-            return iso && iso <= dataFim;
-        });
-    }
-
-    // 2. Resgatar nome da escola
     const escola = getEscolaById(escolaId);
-    const nomeEscola = escola ? (escola.NomeFantasia || escola.fantasia || 'Nome não encontrado') : 'Escola';
+    let totalHoras = 0, linhasHtml = '';
 
-    // 3. Montar as linhas da tabela
-    let linhasHtml = '';
-    let totalHoras = 0;
-
-    if (acoesFiltradas.length === 0) {
-        linhasHtml = '<tr><td colspan="7" style="text-align: center; padding: 15px;">Nenhuma ação encontrada para este período.</td></tr>';
-    } else {
+    if (acoesFiltradas.length === 0) linhasHtml = '<tr><td colspan="7" style="text-align:center;">Nenhuma ação no período.</td></tr>';
+    else {
         acoesFiltradas.forEach(ac => {
-            // Puxa o Agendamento relacionado à esta ação
-            const agendamento = getAgendamentoById(ac.AgendamentoID || ac.agendamentoID || ac.agendamentoId);
-            
-            // Resgata o Evento Planejado e o Responsável. Se não achar, coloca N/I (Não Informado)
-            const eventoPlanejado = agendamento ? (agendamento.TipoEvento || agendamento.tipoEvento || 'N/I') : 'N/I';
-            const responsavel = agendamento ? (`${agendamento.Responsavel || agendamento.responsavel} - ${agendamento.RespNome || agendamento.respNome}`) : 'N/I';
-            
-            let dataExibicao = excelDateToDate(ac.DataRegistro || ac.dataRegistro || ac.Data || ac.data);
-            let horas = Number(ac.CHAcao || ac.chAcao || ac.CargaHoraria || ac.cargaHoraria || ac.Horas || ac.horas || 0);
-            totalHoras += horas;
-            
-            linhasHtml += `
-                <tr>
-                    <td>${eventoPlanejado}</td>
-                    <td>${responsavel}</td>
-                    <td>${ac.Tipo || ac.tipo || ''}</td>
-                    <td>${dataExibicao}</td>
-                    <td>${horas}h</td>
-                    <td>${ac.Descricao || ac.descricao || ''}</td>
-                    <td><a href="${ac.Fotos || '#'}" target="_blank">Ver Fotos</a></td>
-                </tr>
-            `;
+            const ag = getAgendamentoById(ac.AgendamentoID);
+            const evt = ag ? ag.TipoEvento : 'N/I', resp = ag ? `${ag.Responsavel} - ${ag.RespNome}` : 'N/I';
+            const h = Number(ac.CHAcao || ac.CargaHoraria || 0); totalHoras += h;
+            linhasHtml += `<tr><td>${evt}</td><td>${resp}</td><td>${ac.Tipo || ''}</td><td>${excelDateToDate(ac.DataRegistro || ac.Data)}</td><td>${h}h</td><td>${ac.Descricao || ''}</td><td><a href="${ac.Fotos || '#'}" target="_blank">Ver Fotos</a></td></tr>`;
         });
     }
 
-    const dataAtual = new Date().toLocaleString('pt-BR');
-
-    // 4. Montar a estrutura HTML do PDF
     const relatorioHTML = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <title>Relatório - ${nomeEscola}</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
-                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f3b5e; padding-bottom: 15px; margin-bottom: 20px; }
-                .logo { max-height: 60px; }
-                .title-container { text-align: right; }
-                h2 { color: #0f3b5e; margin: 0; font-size: 22px; }
-                .escola-subtitulo { font-size: 18px; color: #555; font-weight: bold; margin-top: 5px; }
-                .data-geracao { font-size: 12px; color: #888; margin-top: 5px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-                th { background-color: #0f3b5e; color: white; padding: 10px; text-align: left; }
-                td { padding: 8px; border-bottom: 1px solid #ddd; }
-                .total { font-weight: bold; margin-top: 20px; font-size: 16px; text-align: right; color: #0f3b5e; }
-                a { color: #0f3b5e; text-decoration: none; font-weight: bold; }
-                
-                @media print {
-                    @page { margin: 1.5cm; }
-                    body { margin: 0; }
-                    .no-print { display: none; }
-                }
-            </style>
-        </head>
-        <body onload="window.print();">
-            
-            <div class="header">
-                <img src="/images/logozmaker.png" class="logo" alt="Logo ZMaker">
-                <div class="title-container">
-                    <h2>Relatório de Atendimentos ZMaker</h2>
-                    <div class="escola-subtitulo">Escola: ${nomeEscola}</div>
-                    <div class="data-geracao">Gerado em: ${dataAtual}</div>
-                </div>
-            </div>
+        <!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório</title>
+        <style>body{font-family:Arial;margin:40px;}.header{display:flex;justify-content:space-between;border-bottom:2px solid #0f3b5e;padding-bottom:15px;margin-bottom:20px;}
+        .logo{max-height:60px;}h2{color:#0f3b5e;margin:0;}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:12px;}
+        th{background:#0f3b5e;color:#fff;padding:10px;text-align:left;}td{padding:8px;border-bottom:1px solid #ddd;}
+        .total{font-weight:bold;margin-top:20px;text-align:right;color:#0f3b5e;font-size:16px;}
+        @media print{@page{margin:1.5cm;}body{margin:0;}}</style></head><body onload="window.print();">
+        <div class="header"><img src="/images/logozmaker.png" class="logo"><div style="text-align:right;"><h2>Relatório de Atendimentos ZMaker</h2>
+        <div>Escola: ${escola ? escola.NomeFantasia : 'N/E'}</div><div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div></div></div>
+        <table><thead><tr><th>Evento Agendado</th><th>Responsável</th><th>Tipo Executado</th><th>Data</th><th>C. Horária</th><th>Descrição</th><th>Fotos</th></tr></thead><tbody>${linhasHtml}</tbody></table>
+        <div class="total">Total de CH Executada: ${totalHoras}h</div></body></html>`;
 
-            <table>
-                <thead>
-                    <tr>
-                        <!-- Novas colunas adicionadas -->
-                        <th>Evento Agendado</th>
-                        <th>Responsável</th>
-                        <th>Tipo (Executado)</th>
-                        <th>Data</th>
-                        <th>C. Horária</th>
-                        <th>Descrição</th>
-                        <th>Fotos</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${linhasHtml}
-                </tbody>
-            </table>
-
-            <div class="total">Total de CH Executada: ${totalHoras}h</div>
-
-        </body>
-        </html>
-    `;
-
-    // 5. Abre uma nova aba e aciona o motor de PDF do navegador
-    const janelaPrint = window.open('', '_blank');
-    janelaPrint.document.write(relatorioHTML);
-    janelaPrint.document.close();
+    const janela = window.open('', '_blank'); janela.document.write(relatorioHTML); janela.document.close();
 });
 
-// ====== NAVEGAÇÃO BÁSICA ======
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        const tabId = 'tab-' + btn.dataset.tab;
-        document.getElementById(tabId).classList.add('active');
-        if (btn.dataset.tab === 'dashboard') atualizarDashboard();
-        if (btn.dataset.tab === 'relatorios') atualizarSelects();
+        document.querySelectorAll('.nav-btn, .tab-content').forEach(e => e.classList.remove('active'));
+        btn.classList.add('active'); document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'relatorios' || btn.dataset.tab === 'logistica') atualizarSelects();
     });
 });
 
-document.getElementById('acao-fotos').addEventListener('change', function() {
-    document.getElementById('foto-count').textContent = this.files.length + ' arquivo(s)';
-});
+document.getElementById('acao-fotos').addEventListener('change', function() { document.getElementById('foto-count').textContent = this.files.length + ' arquivo(s)'; });
 
-// ====== INICIALIZAÇÃO ======
+// ====== RÉGUA DE PROGRESSO (STATUS DE IMPLANTAÇÃO) ======
+
+function calcularStatusEscola(escolaId) {
+    // 1. Verifica Logística
+    const logs = DB.logistica.filter(l => String(l.EscolaID) === String(escolaId));
+    const log = logs.length > 0 ? logs[logs.length - 1] : null; // Pega o último
+    
+    const adesivacaoOk = log && log.Adesivacao && log.Adesivacao.includes('Concluído');
+    const materialOk = log && log.MaterialEntregue && log.MaterialEntregue.includes('Concluído');
+    
+    // 2. Verifica Ações (Formações e Montagens)
+    const acoesEscola = DB.acoes.filter(a => String(a.EscolaID) === String(escolaId));
+    
+    const montagemOk = acoesEscola.some(a => {
+        const ag = getAgendamentoById(a.AgendamentoID || a.agendamentoID || a.agendamentoId);
+        return ag && (ag.TipoEvento || ag.tipoEvento) === 'Montagem de Equipamentos';
+    });
+    
+    const formacaoOk = acoesEscola.some(a => {
+        const ag = getAgendamentoById(a.AgendamentoID || a.agendamentoID || a.agendamentoId);
+        return ag && (ag.TipoEvento || ag.tipoEvento) === 'Formação Inicial/Continuada';
+    });
+
+    // 3. Calcula Progresso
+    let progresso = 10; 
+    let statusAtual = "Aguardando Logística";
+    let cor = "#3b82f6"; // Azul padrão
+    
+    let marcos = 0;
+    if (adesivacaoOk) marcos++;
+    if (materialOk) marcos++;
+    if (montagemOk) marcos++;
+    if (formacaoOk) marcos++;
+
+    if (marcos === 1) { progresso = 35; statusAtual = "Logística em Andamento"; }
+    if (marcos === 2) { progresso = 60; statusAtual = "Infra e Materiais Entregues"; }
+    if (marcos === 3) { progresso = 80; statusAtual = "Equipamentos Montados"; cor = "#f59e0b"; } // Amarelo
+    if (marcos === 4) { progresso = 100; statusAtual = "ZMaker Lab Operando 🚀"; cor = "#10b981"; } // Verde
+
+    return { progresso, statusAtual, cor, adesivacaoOk, materialOk, montagemOk, formacaoOk };
+}
+
+function renderProgressoImplantacao() {
+    const escolaFiltro = document.getElementById('dashboard-escola').value;
+    const container = document.getElementById('lista-progresso-escolas');
+    
+    let escolasExibir = DB.escolas;
+    if (escolaFiltro) {
+        escolasExibir = DB.escolas.filter(e => String(e.ID) === String(escolaFiltro));
+    }
+
+    if (escolasExibir.length === 0) {
+        container.innerHTML = '<p>Nenhuma escola disponível.</p>';
+        return;
+    }
+
+    let html = '';
+    escolasExibir.forEach(e => {
+        const st = calcularStatusEscola(e.ID);
+        
+        html += `
+        <div class="progress-container">
+            <div class="progress-header">
+                <span>${e.NomeFantasia || e.RazaoSocial || 'Escola'}</span>
+                <span style="color: ${st.cor};">${st.progresso}% - ${st.statusAtual}</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: ${st.progresso}%; background-color: ${st.cor};"></div>
+            </div>
+            <div class="progress-steps">
+                <div class="progress-step completed">Cadastro</div>
+                <div class="progress-step ${st.adesivacaoOk ? 'completed' : ''}">Adesivação</div>
+                <div class="progress-step ${st.materialOk ? 'completed' : ''}">Materiais</div>
+                <div class="progress-step ${st.montagemOk ? 'completed' : ''}">Montagem</div>
+                <div class="progress-step ${st.formacaoOk ? 'active-final' : ''}">Operação</div>
+            </div>
+        </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
 initData();
-
-document.getElementById('aplicar-filtros-dash').addEventListener('click', atualizarDashboard);
-document.querySelectorAll('#dashboard-escola, #dashboard-data-inicio, #dashboard-data-fim').forEach(el => {
-    el.addEventListener('change', atualizarDashboard);
-});

@@ -22,7 +22,14 @@ const API_CONFIG = {
     postAcao: 'https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/12/workflows/52b6af4c67e9414181fa67d5790f5e1e/triggers/manual/paths/invoke/api/acoes?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iKV0M_6AvGsmRvHhgagr4dygDJnlOxrnWbIE-Ncx_08',
     
     // Gerar relatório (POST) - retorna PDF
-    postRelatorio: 'https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/15/workflows/e4e666c3f12e40e3a4c80fc3ad21a37a/triggers/manual/paths/invoke/gerar_relatorio?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xycg3o9PQwJ3ixkVY1_V_iO83_7sf5Ac88T4SeEFvwc'
+    postRelatorio: 'https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com/powerautomate/automations/direct/cu/15/workflows/e4e666c3f12e40e3a4c80fc3ad21a37a/triggers/manual/paths/invoke/gerar_relatorio?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xycg3o9PQwJ3ixkVY1_V_iO83_7sf5Ac88T4SeEFvwc',
+
+    // Lista os Itens da Logística (GET)
+    getLogistica: 'https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/12d41abd5414403093287015101e0933/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=PMkBFgXIaLMgvfcRNudf6xYGZ5l3Lq9ROqxzV7M2LiU', 
+
+    // Cria os itens de Logística
+    postLogistica: 'https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/04/workflows/1a0c5045504a41bf9828a6b096dd3a41/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=JlHf8lZR1iPSm_VIju906dkBf4kmdvoFzZHwTBwwBT8'
+
 };
 
 // Exporta para uso global

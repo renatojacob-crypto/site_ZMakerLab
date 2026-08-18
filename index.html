@@ -4,19 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZMaker Manager</title>
-    <!-- CSS próprio -->
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
-    <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
-    <!-- OVERLAY DE CARREGAMENTO (TELA ESCURA) -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner-large"></div>
-        <p>Salvando e sincronizando dados...</p>
+        <p>Sincronizando dados...</p>
     </div>
 
     <div class="app-container">
@@ -26,6 +22,8 @@
                 <button class="nav-btn active" data-tab="escolas">🏫 Escolas</button>
                 <button class="nav-btn" data-tab="agendamentos">📅 Agendamentos</button>
                 <button class="nav-btn" data-tab="acoes">📝 Ações</button>
+                <!-- Novo botão de Logística -->
+                <button class="nav-btn" data-tab="logistica">📦 Logística</button>
                 <button class="nav-btn" data-tab="dashboard">📊 Dashboard</button>
                 <button class="nav-btn" data-tab="relatorios">📄 Relatórios</button>
             </nav>
@@ -42,7 +40,6 @@
                             <input type="text" id="escola-razao" placeholder="Razão Social" required>
                             <input type="text" id="escola-fantasia" placeholder="Nome Fantasia" required>
                             
-                            <!-- CEP com auto preenchimento -->
                             <div class="cep-group">
                                 <input type="text" id="escola-cep" placeholder="CEP (somente números)" maxlength="8" required>
                                 <button type="button" id="buscar-cep" class="btn-secondary">🔍 Buscar CEP</button>
@@ -104,7 +101,6 @@
                             <input type="date" id="agendamento-data" required>
                             <input type="time" id="agendamento-hora" required>
                             
-                            <!-- Quem realizará a ação -->
                             <select id="agendamento-responsavel" required>
                                 <option value="">Quem realizará a ação?</option>
                                 <option value="Comercial">Comercial</option>
@@ -115,7 +111,6 @@
                             <input type="email" id="agendamento-resp-email" placeholder="E-mail do Responsável" required>
                             <input type="tel" id="agendamento-resp-telefone" placeholder="Telefone do Responsável" required>
                             
-                            <!-- Contatos adicionais -->
                             <input type="text" id="agendamento-contato-nome" placeholder="Nome do Contato (opcional)">
                             <input type="text" id="agendamento-contato-cargo" placeholder="Cargo (opcional)">
                             <input type="email" id="agendamento-contato-email" placeholder="E-mail (opcional)">
@@ -166,6 +161,82 @@
                 </div>
             </section>
 
+            <!-- NOVA ABA: LOGÍSTICA E IMPLANTAÇÃO -->
+            <section id="tab-logistica" class="tab-content">
+                <div class="card">
+                    <h2>Atualizar Logística e Implantação</h2>
+                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Selecione a escola para preencher ou atualizar os dados de implantação.</p>
+                    <form id="form-logistica">
+                        <div class="form-grid">
+                            <select id="logistica-escola" required></select>
+                            
+                            <div>
+                                <label for="log-tensao">Tensão Elétrica da Sala:</label>
+                                <select id="log-tensao" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="110V">110V</option>
+                                    <option value="220V">220V</option>
+                                    <option value="Bivolt">Bivolt</option>
+                                    <option value="Não Informado">Não Informado</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="log-faseada">Entrega Faseada?</label>
+                                <select id="log-faseada" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="Sim">Sim</option>
+                                    <option value="Não">Não</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="log-adesivacao">Adesivação da Sala:</label>
+                                <select id="log-adesivacao" required>
+                                    <option value="">Selecione o status...</option>
+                                    <option value="Sem Adesivação">Sem Adesivação</option>
+                                    <option value="Pendente">Pendente</option>
+                                    <option value="Em Andamento">Em Andamento</option>
+                                    <option value="Concluído">Concluído</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="log-material">Status do Material:</label>
+                                <select id="log-material" required>
+                                    <option value="">Selecione o status...</option>
+                                    <option value="Pendente">Pendente</option>
+                                    <option value="Em Separação">Em Separação</option>
+                                    <option value="Em Trânsito">Em Trânsito</option>
+                                    <option value="Entregue Parcial">Entregue (Parcial)</option>
+                                    <option value="Concluído">Concluído (Total)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="log-previsao">Previsão de Entrega (Remessa):</label>
+                                <input type="date" id="log-previsao">
+                            </div>
+
+                            <input type="text" id="log-pedido-fases" placeholder="Nº do Pedido (Fases) - Opcional">
+                            <input type="text" id="log-pedido-bonificacao" placeholder="Nº do Pedido (Bonificação) - Opcional">
+                            
+                        </div>
+                        <button type="submit" class="btn-primary">Salvar Informações Logísticas</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2>Painel Gerencial de Implantação</h2>
+                    <div class="filter-group">
+                        <select id="filtro-gerencial-escola">
+                            <option value="">Todas as Escolas</option>
+                        </select>
+                    </div>
+                    <div id="painel-gerencial-logistica" class="table-responsive"></div>
+                </div>
+            </section>
+
             <!-- Aba DASHBOARD -->
             <section id="tab-dashboard" class="tab-content">
                 <div class="card dashboard-filters">
@@ -195,6 +266,14 @@
                         <span id="total-reunioes">0</span>
                     </div>
                 </div>
+                <!-- NOVA ÁREA: Status de Implantação -->
+                <div class="card">
+                    <h2>Status Global de Implantação</h2>
+                    <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Acompanhamento automatizado cruzando Logística e Formações.</p>
+                    <div id="lista-progresso-escolas"></div>
+                </div>
+
+                <!-- Gráficos ... -->
                 <div class="card chart-card">
                     <h3>Ações por Tipo</h3>
                     <canvas id="chart-acoes-tipo"></canvas>
@@ -215,7 +294,6 @@
                         <input type="date" id="relatorio-data-fim">
                         <button id="gerar-relatorio" class="btn-primary">Gerar PDF</button>
                     </div>
-                    <div id="preview-relatorio" class="relatorio-preview"></div>
                 </div>
             </section>
         </main>
