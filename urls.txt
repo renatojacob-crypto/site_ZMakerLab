@@ -16,9 +16,4 @@ URL Listar Logística - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environ
 
 URL Criar Logística - https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/04/workflows/1a0c5045504a41bf9828a6b096dd3a41/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=JlHf8lZR1iPSm_VIju906dkBf4kmdvoFzZHwTBwwBT8
 
-Expressões powerautomate
-
-Pegar a data: formatDateTime(utcNow(), 'dd/MM/yyyy')
-
-
-pegar a hora: formatDateTime(utcNow(), 'HH:mm')
+Chave API Google Maps - AIzaSyBP1yTdfWgs4BHnViN8N_H516fx492xF1I

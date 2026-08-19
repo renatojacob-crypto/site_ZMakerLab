@@ -23,6 +23,8 @@
                 <button class="nav-btn" data-tab="agendamentos">📅 Agendamentos</button>
                 <button class="nav-btn" data-tab="acoes">📝 Ações</button>
                 <button class="nav-btn" data-tab="logistica">📦 Logística</button>
+                <button class="nav-btn" data-tab="roteiros">🗺️ Roteiros</button>
+                <button class="nav-btn" data-tab="termos">📑 Termos</button> <!-- NOVO MÓDULO -->
                 <button class="nav-btn" data-tab="dashboard">📊 Dashboard</button>
                 <button class="nav-btn" data-tab="relatorios">📄 Relatórios</button>
             </nav>
@@ -138,7 +140,7 @@
                             </select>
                             <textarea id="acao-descricao" placeholder="Descrição da ação realizada..." rows="3" required></textarea>
                             
-                            <!-- NOVO: Checklist de Setup Dinâmico (Invisível por padrão) -->
+                            <!-- Checklist de Setup Dinâmico -->
                             <div id="area-setup-hardware" class="hardware-setup-box" style="display: none;">
                                 <h3>🛠️ Validação de Inventário e Hardware</h3>
                                 <p style="font-size: 11px; color: #666; margin: 0;">Marque os itens que foram entregues e estão em conformidade no ZMaker Lab:</p>
@@ -182,7 +184,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- FIM DO NOVO -->
 
                             <div>
                                 <label for="acao-data">Data da Realização:</label>
@@ -207,7 +208,7 @@
                 </div>
             </section>
 
-            <!-- NOVA ABA: LOGÍSTICA E IMPLANTAÇÃO -->
+            <!-- Aba LOGÍSTICA E IMPLANTAÇÃO -->
             <section id="tab-logistica" class="tab-content">
                 <div class="card">
                     <h2>Atualizar Logística e Implantação</h2>
@@ -271,8 +272,6 @@
                                 <label>Número do Pedido Bonificação:</label>
                                 <input type="text" id="log-pedido-bonificacao" placeholder="Nº do Pedido (Bonificação) - Opcional">
                             </div>
-                            
-                            
                         </div>
                         <button type="submit" class="btn-primary">Salvar Informações Logísticas</button>
                     </form>
@@ -286,6 +285,41 @@
                         </select>
                     </div>
                     <div id="painel-gerencial-logistica" class="table-responsive"></div>
+                </div>
+            </section>
+
+            <!-- ABA ROTEIROS GEOGRÁFICOS -->
+            <section id="tab-roteiros" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2 style="margin-bottom: 5px; border: none; padding: 0;">Planejamento de Roteiros</h2>
+                            <p style="font-size: 0.9rem; color: #666; margin: 0;">Escolas com pendências agrupadas por Estado e visualização em Mapa.</p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="btn-visao-lista" class="btn-primary">📋 Ver Lista</button>
+                            <button id="btn-visao-mapa" class="btn-secondary" style="background-color: #ea4335;">🗺️ Ver no Mapa</button>
+                        </div>
+                    </div>
+                    
+                    <div id="painel-roteiros" class="table-responsive"></div>
+                    
+                    <div id="painel-mapa" style="display: none;">
+                        <div id="mapa-google" style="width: 100%; height: 500px; border-radius: 8px; border: 1px solid #ddd;"></div>
+                        <p style="font-size: 11px; color: #888; text-align: center; margin-top: 10px;">Atenção: A primeira plotagem no mapa pode demorar alguns segundos, pois o sistema está lendo os endereços.</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- NOVA ABA: TERMO DE ACEITE -->
+            <section id="tab-termos" class="tab-content">
+                <div class="card">
+                    <h2>Geração de Termo de Aceite e Implantação</h2>
+                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Emita o documento oficial de entrega cruzando os dados da Logística, Checklist de Inventário e Formação.</p>
+                    <div class="filter-group">
+                        <select id="termo-escola"><option value="">Selecione uma escola concluída...</option></select>
+                        <button id="gerar-termo-pdf" class="btn-primary">Gerar Termo em PDF</button>
+                    </div>
                 </div>
             </section>
 
@@ -319,7 +353,6 @@
                     </div>
                 </div>
                 
-                <!-- NOVA ÁREA: Status de Implantação -->
                 <div class="card">
                     <h2>Status Global de Implantação</h2>
                     <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Acompanhamento automatizado cruzando Logística e Formações.</p>
@@ -339,7 +372,7 @@
             <!-- Aba RELATÓRIOS -->
             <section id="tab-relatorios" class="tab-content">
                 <div class="card">
-                    <h2>Gerar Relatório</h2>
+                    <h2>Gerar Relatório Analítico</h2>
                     <div class="filter-group">
                         <select id="relatorio-escola"><option value="">Todas as Escolas</option></select>
                         <input type="date" id="relatorio-data-inicio">
@@ -353,4 +386,7 @@
 
     <script src="config.js"></script>
     <script src="app.js"></script>
+    <!-- Script do Google Maps -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBP1yTdfWgs4BHnViN8N_H516fx492xF1I"></script>
 </body>
+</html>
