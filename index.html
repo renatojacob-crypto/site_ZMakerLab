@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZMaker Manager</title>
+    <title>ZMaker Manager - ZOOM Education for Life</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -24,13 +24,60 @@
                 <button class="nav-btn" data-tab="acoes">📝 Ações</button>
                 <button class="nav-btn" data-tab="logistica">📦 Logística</button>
                 <button class="nav-btn" data-tab="roteiros">🗺️ Roteiros</button>
-                <button class="nav-btn" data-tab="termos">📑 Termos</button> <!-- NOVO MÓDULO -->
+                <button class="nav-btn" data-tab="termos">📑 Termos</button>
+                <button class="nav-btn" data-tab="gerentes">👩‍💼 Gerentes</button> <!-- NOVO -->
+                <button class="nav-btn" data-tab="equipe">👷 Equipe</button> <!-- NOVO -->
                 <button class="nav-btn" data-tab="dashboard">📊 Dashboard</button>
                 <button class="nav-btn" data-tab="relatorios">📄 Relatórios</button>
             </nav>
         </header>
 
         <main>
+            <!-- ABA: GERENTES (NOVA) -->
+            <section id="tab-gerentes" class="tab-content">
+                <div class="card">
+                    <h2>Cadastro de Gerente Educacional</h2>
+                    <form id="form-gerente">
+                        <div class="form-grid">
+                            <input type="text" id="gerente-nome" placeholder="Nome Completo" required>
+                            <input type="email" id="gerente-email" placeholder="E-mail" required>
+                            <input type="tel" id="gerente-telefone" placeholder="Telefone">
+                        </div>
+                        <button type="submit" class="btn-primary">Salvar Gerente</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>Gerentes Cadastradas</h2>
+                    <div id="lista-gerentes" class="table-responsive"></div>
+                </div>
+            </section>
+
+            <!-- ABA: EQUIPE TÉCNICA (NOVA) -->
+            <section id="tab-equipe" class="tab-content">
+                <div class="card">
+                    <h2>Cadastro de Responsável / Equipe</h2>
+                    <form id="form-equipe">
+                        <div class="form-grid">
+                            <input type="text" id="equipe-nome" placeholder="Nome Completo" required>
+                            <input type="email" id="equipe-email" placeholder="E-mail" required>
+                            <input type="tel" id="equipe-telefone" placeholder="Telefone">
+                            <select id="equipe-cargo" required>
+                                <option value="">Selecione o Cargo...</option>
+                                <option value="Orientador">Orientador</option>
+                                <option value="Técnico de Implantação">Equipe ZMaker Lab</option>
+                                <option value="Comercial">Comercial</option>
+                                <option value="Coordenação">Coordenação</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary">Salvar Responsável</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>Equipe Cadastrada</h2>
+                    <div id="lista-equipe" class="table-responsive"></div>
+                </div>
+            </section>
+
             <!-- Aba ESCOLAS -->
             <section id="tab-escolas" class="tab-content active">
                 <div class="card">
@@ -68,6 +115,11 @@
                                 <option value="Bonificação">Bonificação</option>
                                 <option value="Venda">Venda</option>
                             </select>
+
+                            <!-- Seleção Dinâmica da Gerente -->
+                            <select id="escola-gerente" required>
+                                <option value="">Carregando Gerentes...</option>
+                            </select>
                             
                             <input type="text" id="escola-contato-nome" placeholder="Nome do Contato" required>
                             <input type="text" id="escola-contato-cargo" placeholder="Cargo">
@@ -102,15 +154,20 @@
                             <input type="date" id="agendamento-data" required>
                             <input type="time" id="agendamento-hora" required>
                             
+                            <!-- Seleção Dinâmica da Equipe -->
                             <select id="agendamento-responsavel" required>
-                                <option value="">Quem realizará a ação?</option>
-                                <option value="Comercial">Comercial</option>
-                                <option value="Orientador">Orientador</option>
-                                <option value="Equipe ZMaker">Equipe ZMaker</option>
+                                <option value="">Carregando Responsáveis...</option>
                             </select>
-                            <input type="text" id="agendamento-resp-nome" placeholder="Nome do Responsável" required>
-                            <input type="email" id="agendamento-resp-email" placeholder="E-mail do Responsável" required>
-                            <input type="tel" id="agendamento-resp-telefone" placeholder="Telefone do Responsável" required>
+                            <input type="text" id="agendamento-resp-nome" placeholder="Nome do Responsável" readonly required>
+                            <input type="email" id="agendamento-resp-email" placeholder="E-mail do Responsável" readonly required>
+                            <input type="tel" id="agendamento-resp-telefone" placeholder="Telefone do Responsável" readonly required>
+                            
+                            <!-- Campos da Gerente -->
+                            <select id="agendamento-gerente" required>
+                                <option value="">Carregando Gerentes...</option>
+                            </select>
+                            <input type="email" id="agendamento-email-gerente" placeholder="E-mail do(a) Gerente" readonly required>
+                            
                             
                             <input type="text" id="agendamento-contato-nome" placeholder="Nome do Contato (opcional)">
                             <input type="text" id="agendamento-contato-cargo" placeholder="Cargo (opcional)">

@@ -12,6 +12,8 @@ function hideLoading() {
 
 // ====== FUNÇÃO PARA FAZER REQUISIÇÕES ======
 async function callAPI(url, method = 'GET', data = null) {
+    if (!url) return []; // Retorna vazio se a URL não estiver configurada no config.js
+    
     const options = {
         method: method,
         headers: {
@@ -48,39 +50,45 @@ async function callAPI(url, method = 'GET', data = null) {
     }
 }
 
-// ====== FUNÇÕES DE CRUD ======
-async function getEscolas() {
-    if (!API.getEscolas) return [];
-    const response = await callAPI(API.getEscolas, 'GET');
-    return response.value || response;
+// ====== FUNÇÕES DE CRUD (AGORA COM GERENTES E EQUIPE) ======
+async function getEscolas() { 
+    const res = await callAPI(API.getEscolas, 'GET'); 
+    return res.value || (Array.isArray(res) ? res : []); 
 }
 async function createEscola(dados) { return await callAPI(API.postEscola, 'POST', dados); }
 
-async function getAgendamentos() {
-    if (!API.getAgendamentos) return [];
-    const response = await callAPI(API.getAgendamentos, 'GET');
-    return response.value || response;
+async function getAgendamentos() { 
+    const res = await callAPI(API.getAgendamentos, 'GET'); 
+    return res.value || (Array.isArray(res) ? res : []); 
 }
 async function createAgendamento(dados) { return await callAPI(API.postAgendamento, 'POST', dados); }
 
-async function getAcoes() {
-    if (!API.getAcoes) return [];
-    const response = await callAPI(API.getAcoes, 'GET');
-    return response.value || response;
+async function getAcoes() { 
+    const res = await callAPI(API.getAcoes, 'GET'); 
+    return res.value || (Array.isArray(res) ? res : []); 
 }
 async function createAcao(dados) { return await callAPI(API.postAcao, 'POST', dados); }
 
 async function getLogistica() {
-    if (!API.getLogistica) return [];
-    try {
-        const response = await callAPI(API.getLogistica, 'GET');
-        return response.value || response;
-    } catch(e) {
-        console.warn("API de Logística não configurada ou vazia.");
-        return [];
-    }
+    try { 
+        const res = await callAPI(API.getLogistica, 'GET'); 
+        return res.value || (Array.isArray(res) ? res : []); 
+    } catch(e) { return []; }
 }
 async function createLogistica(dados) { return await callAPI(API.postLogistica, 'POST', dados); }
+
+// NOVOS CRUDS - GERENTES E EQUIPE
+async function getGerentes() { 
+    const res = await callAPI(API.getGerentes, 'GET'); 
+    return res.value || (Array.isArray(res) ? res : []); 
+}
+async function createGerente(dados) { return await callAPI(API.postGerente, 'POST', dados); }
+
+async function getEquipe() { 
+    const res = await callAPI(API.getEquipe, 'GET'); 
+    return res.value || (Array.isArray(res) ? res : []); 
+}
+async function createEquipe(dados) { return await callAPI(API.postEquipe, 'POST', dados); }
 
 // ====== CONVERSÃO DE DATAS ======
 function excelDateToDate(serial) {
@@ -173,19 +181,23 @@ async function preencherEndereco(cep) {
 }
 
 // ====== BANCO DE DADOS LOCAL ======
-const DB = { escolas: [], agendamentos: [], acoes: [], logistica: [] };
+const DB = { escolas: [], agendamentos: [], acoes: [], logistica: [], gerentes: [], equipe: [] };
 
 // ====== INICIALIZAR DADOS ======
 async function initData() {
     try {
-        const [escolas, agendamentos, acoes, logistica] = await Promise.all([
-            getEscolas(), getAgendamentos(), getAcoes(), getLogistica()
+        const [escolas, agendamentos, acoes, logistica, gerentes, equipe] = await Promise.all([
+            getEscolas(), getAgendamentos(), getAcoes(), getLogistica(), getGerentes(), getEquipe()
         ]);
         
         DB.escolas = (Array.isArray(escolas) ? escolas : []).map((e, i) => ({ ...e, ID: String(e.ID || e.id || e.idEscola || i + 1).trim() }));
         DB.agendamentos = (Array.isArray(agendamentos) ? agendamentos : []).map((a, i) => ({ ...a, ID: String(a.ID || a.id || i + 1).trim(), EscolaID: String(a.EscolaID || a.escolaID || '').trim() }));
         DB.acoes = (Array.isArray(acoes) ? acoes : []).map((a, i) => ({ ...a, ID: String(a.ID || a.id || i + 1).trim(), AgendamentoID: String(a.AgendamentoID || a.agendamentoID || '').trim(), EscolaID: String(a.EscolaID || a.escolaID || '').trim() }));
         DB.logistica = (Array.isArray(logistica) ? logistica : []).map(l => ({ ...l, EscolaID: String(l.EscolaID || l.escolaID || '').trim() }));
+        
+        // Novos Arrays
+        DB.gerentes = (Array.isArray(gerentes) ? gerentes : []).map((g, i) => ({ ...g, ID: String(g.ID || g.id || i + 1).trim() }));
+        DB.equipe = (Array.isArray(equipe) ? equipe : []).map((eq, i) => ({ ...eq, ID: String(eq.ID || eq.id || i + 1).trim() }));
         
         console.log('✅ Dados carregados.');
     } catch (error) { console.error('❌ Erro:', error); }
@@ -194,9 +206,11 @@ async function initData() {
     renderEscolas();
     renderAgendamentos();
     renderAcoes();
-    atualizarDashboard(); 
     renderPainelLogistica();
     renderRoteiros();
+    renderGerentes();
+    renderEquipe();
+    atualizarDashboard(); 
 }
 
 // ====== HELPERS ======
@@ -250,6 +264,26 @@ function renderAcoes() {
     container.innerHTML = html + '</tbody></table>';
 }
 
+function renderGerentes() {
+    const container = document.getElementById('lista-gerentes');
+    if (!DB.gerentes.length) { container.innerHTML = '<p>Nenhuma gerente cadastrada.</p>'; return; }
+    let html = `<table><thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th></tr></thead><tbody>`;
+    DB.gerentes.forEach(g => {
+        html += `<tr><td>${g.Nome || g.nome || ''}</td><td>${g.Email || g.email || ''}</td><td>${g.Telefone || g.telefone || ''}</td></tr>`;
+    });
+    container.innerHTML = html + '</tbody></table>';
+}
+
+function renderEquipe() {
+    const container = document.getElementById('lista-equipe');
+    if (!DB.equipe.length) { container.innerHTML = '<p>Nenhum responsável cadastrado.</p>'; return; }
+    let html = `<table><thead><tr><th>Nome</th><th>Cargo</th><th>E-mail</th><th>Telefone</th></tr></thead><tbody>`;
+    DB.equipe.forEach(eq => {
+        html += `<tr><td>${eq.Nome || eq.nome || ''}</td><td>${eq.Cargo || eq.cargo || ''}</td><td>${eq.Email || eq.email || ''}</td><td>${eq.Telefone || eq.telefone || ''}</td></tr>`;
+    });
+    container.innerHTML = html + '</tbody></table>';
+}
+
 function renderPainelLogistica() {
     const container = document.getElementById('painel-gerencial-logistica');
     const filtroEscola = document.getElementById('filtro-gerencial-escola').value;
@@ -293,6 +327,84 @@ function renderPainelLogistica() {
     
     container.innerHTML = html + '</tbody></table>';
 }
+
+// ====== EVENTOS DE AUTO-PREENCHIMENTO (AGORA BASEADO NO BANCO DE DADOS) ======
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // Auto-preenchimento do Responsável Técnico (Equipe)
+    const selResponsavel = document.getElementById('agendamento-responsavel');
+    if(selResponsavel) {
+        selResponsavel.addEventListener('change', (e) => {
+            const pessoa = DB.equipe.find(p => p.ID === e.target.value);
+            document.getElementById('agendamento-resp-nome').value = pessoa ? (pessoa.Nome || pessoa.nome) : '';
+            document.getElementById('agendamento-resp-email').value = pessoa ? (pessoa.Email || pessoa.email) : '';
+            document.getElementById('agendamento-resp-telefone').value = pessoa ? (pessoa.Telefone || pessoa.telefone) : '';
+        });
+    }
+
+    // Auto-preenchimento do e-mail da Gerente quando selecionada na lista
+    const selGerenteAgend = document.getElementById('agendamento-gerente');
+    if(selGerenteAgend) {
+        selGerenteAgend.addEventListener('change', (e) => {
+            const gerente = DB.gerentes.find(g => g.ID === e.target.value);
+            document.getElementById('agendamento-email-gerente').value = gerente ? (gerente.Email || gerente.email) : '';
+        });
+    }
+
+    // Auto-selecionar a Gerente automaticamente ao escolher a Escola
+    const selEscolaAgend = document.getElementById('agendamento-escola');
+    if(selEscolaAgend) {
+        selEscolaAgend.addEventListener('change', (e) => {
+            const escolaId = e.target.value;
+            const escola = getEscolaById(escolaId);
+            
+            const dropdownGerente = document.getElementById('agendamento-gerente');
+            if (escola && (escola.GerenteID || escola.gerenteID)) {
+                dropdownGerente.value = String(escola.GerenteID || escola.gerenteID);
+            } else {
+                dropdownGerente.value = '';
+            }
+            // Força a atualização da caixinha de e-mail disparando o evento de mudança
+            if (dropdownGerente) dropdownGerente.dispatchEvent(new Event('change'));
+        });
+    }
+}); // AQUI estava faltando o fechamento da função!
+
+// ====== NOVOS FORMULÁRIOS: GERENTE E EQUIPE ======
+document.getElementById('form-gerente').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const dados = {
+        Nome: document.getElementById('gerente-nome').value,
+        Email: document.getElementById('gerente-email').value,
+        Telefone: document.getElementById('gerente-telefone').value
+    };
+    showLoading();
+    try {
+        await createGerente(dados);
+        await new Promise(r => setTimeout(r, 2000));
+        await initData();
+        document.getElementById('form-gerente').reset();
+        alert('Gerente salva com sucesso!');
+    } catch (error) { alert('Erro ao salvar gerente.'); } finally { hideLoading(); }
+});
+
+document.getElementById('form-equipe').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const dados = {
+        Nome: document.getElementById('equipe-nome').value,
+        Email: document.getElementById('equipe-email').value,
+        Telefone: document.getElementById('equipe-telefone').value,
+        Cargo: document.getElementById('equipe-cargo').value
+    };
+    showLoading();
+    try {
+        await createEquipe(dados);
+        await new Promise(r => setTimeout(r, 2000));
+        await initData();
+        document.getElementById('form-equipe').reset();
+        alert('Responsável salvo com sucesso!');
+    } catch (error) { alert('Erro ao salvar responsável.'); } finally { hideLoading(); }
+});
 
 // ====== LÓGICA DO FORMULÁRIO DE LOGÍSTICA ======
 document.getElementById('logistica-escola').addEventListener('change', function() {
@@ -352,6 +464,10 @@ document.getElementById('form-logistica').addEventListener('submit', async (e) =
 // ====== FORMULÁRIOS RESTANTES ======
 document.getElementById('form-escola').addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    const gerenteId = document.getElementById('escola-gerente').value;
+    const gerenteObj = DB.gerentes.find(g => g.ID === gerenteId);
+    
     const dados = {
         cnpj: document.getElementById('escola-cnpj').value,
         razao: document.getElementById('escola-razao').value,
@@ -365,6 +481,9 @@ document.getElementById('form-escola').addEventListener('submit', async (e) => {
         tipoZmaker: document.getElementById('escola-tipo-zmaker').value,
         origem: document.getElementById('escola-origem').value,
         bonificacao: document.getElementById('escola-bonificacao').value,
+        GerenteID: gerenteId,
+        GerenteNome: gerenteObj ? (gerenteObj.Nome || gerenteObj.nome) : '',
+        GerenteEmail: gerenteObj ? (gerenteObj.Email || gerenteObj.email) : '',
         contatoNome: document.getElementById('escola-contato-nome').value,
         contatoCargo: document.getElementById('escola-contato-cargo').value,
         contatoEmail: document.getElementById('escola-contato-email').value,
@@ -386,6 +505,8 @@ document.getElementById('form-agendamento').addEventListener('submit', async (e)
     const rawData = document.getElementById('agendamento-data').value; 
     const rawHora = document.getElementById('agendamento-hora').value; 
     
+    const escola = getEscolaById(escolaIdValue);
+    
     const dados = {
         EscolaID: String(escolaIdValue).trim(), 
         TipoEvento: document.getElementById('agendamento-tipo-evento').value,
@@ -398,15 +519,18 @@ document.getElementById('form-agendamento').addEventListener('submit', async (e)
         ContatoNome: document.getElementById('agendamento-contato-nome').value,
         ContatoCargo: document.getElementById('agendamento-contato-cargo').value,
         ContatoEmail: document.getElementById('agendamento-contato-email').value,
-        ContatoTelefone: document.getElementById('agendamento-contato-telefone').value
+        ContatoTelefone: document.getElementById('agendamento-contato-telefone').value,
+        EmailEscola: escola ? escola.ContatoEmail : '',
+        EmailGerente: document.getElementById('agendamento-email-gerente').value
     };
+    
     showLoading(); 
     try {
         await createAgendamento(dados);
         await new Promise(r => setTimeout(r, 2000));
         await initData(); 
         document.getElementById('form-agendamento').reset();
-        alert('Agendamento criado!');
+        alert('Agendamento criado e e-mails enviados para fila!');
     } catch (error) { alert('Erro ao salvar o agendamento.'); } finally { hideLoading(); }
 });
 
@@ -485,7 +609,6 @@ document.getElementById('form-acao').addEventListener('submit', async (e) => {
 
 // ====== ATUALIZAR SELECTS ======
 function atualizarSelects() {
-    // Note que adicionamos o termo-escola nesta lista!
     const selects = ['agendamento-escola', 'dashboard-escola', 'relatorio-escola', 'logistica-escola', 'filtro-gerencial-escola', 'termo-escola'];
     selects.forEach(id => {
         const sel = document.getElementById(id);
@@ -497,6 +620,39 @@ function atualizarSelects() {
             if (currentVal) sel.value = currentVal;
         }
     });
+
+    // Puxa as gerentes cadastradas no DB
+    const selGerente = document.getElementById('escola-gerente');
+    if (selGerente) {
+        const currentVal = selGerente.value;
+        selGerente.innerHTML = '<option value="">Selecione a Gerente da Conta...</option>';
+        DB.gerentes.forEach(g => {
+            selGerente.innerHTML += `<option value="${g.ID}">${g.Nome || g.nome}</option>`;
+        });
+        if (currentVal) selGerente.value = currentVal;
+    }
+
+    // Puxa as gerentes para a aba de Agendamentos
+    const selGerenteAgend = document.getElementById('agendamento-gerente');
+    if (selGerenteAgend) {
+        const currentVal = selGerenteAgend.value;
+        selGerenteAgend.innerHTML = '<option value="">Selecione a Gerente...</option>';
+        DB.gerentes.forEach(g => {
+            selGerenteAgend.innerHTML += `<option value="${g.ID}">${g.Nome || g.nome}</option>`;
+        });
+        if (currentVal) selGerenteAgend.value = currentVal;
+    }
+
+    // Puxa a equipe cadastrada no DB
+    const selResp = document.getElementById('agendamento-responsavel');
+    if (selResp) {
+        const currentVal = selResp.value;
+        selResp.innerHTML = '<option value="">Selecione o Responsável...</option>';
+        DB.equipe.forEach(eq => {
+            selResp.innerHTML += `<option value="${eq.ID}">${eq.Nome || eq.nome}</option>`;
+        });
+        if (currentVal) selResp.value = currentVal;
+    }
     
     const selAcao = document.getElementById('acao-agendamento');
     if (selAcao) {
@@ -533,7 +689,6 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.nav-btn, .tab-content').forEach(e => e.classList.remove('active'));
         btn.classList.add('active'); document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-        // Atualiza selects ao entrar nas abas pertinentes
         if (['relatorios', 'logistica', 'dashboard', 'roteiros', 'termos'].includes(btn.dataset.tab)) {
             atualizarSelects();
         }
@@ -825,7 +980,7 @@ function iniciarMapaGoogle() {
     window.mapaGoogleIniciado = true;
 }
 
-// ====== NOVO: GERAR TERMO DE ACEITE ======
+// ====== NOVO: GERAR TERMO DE ACEITE (ATUALIZADO PARA ZOOM) ======
 document.getElementById('gerar-termo-pdf').addEventListener('click', () => {
     const escolaId = document.getElementById('termo-escola').value;
     if (!escolaId) { alert('Por favor, selecione uma escola.'); return; }
@@ -833,14 +988,12 @@ document.getElementById('gerar-termo-pdf').addEventListener('click', () => {
     const escola = getEscolaById(escolaId);
     if (!escola) return;
 
-    // Busca os dados das 3 fases para montar o documento
     const logsEscola = DB.logistica.filter(l => String(l.EscolaID) === String(escolaId));
     const logistica = logsEscola.length > 0 ? logsEscola[logsEscola.length - 1] : null;
     const dataLogistica = logistica && logistica.PrevisaoEntrega ? excelDateToDate(logistica.PrevisaoEntrega) : 'Data não informada';
     
     const acoesEscola = DB.acoes.filter(a => String(a.EscolaID) === String(escolaId));
     
-    // Procura a montagem para extrair o inventário e a data
     const montagem = acoesEscola.find(a => {
         const ag = getAgendamentoById(a.AgendamentoID || a.agendamentoID || a.agendamentoId);
         return ag && (ag.TipoEvento === 'Montagem de Equipamentos' || ag.tipoEvento === 'Montagem de Equipamentos');
@@ -852,21 +1005,18 @@ document.getElementById('gerar-termo-pdf').addEventListener('click', () => {
         dataMontagem = excelDateToDate(montagem.DataRegistro || montagem.Data);
         if (montagem.Descricao && montagem.Descricao.includes('[INVENTÁRIO E SETUP]')) {
             const partes = montagem.Descricao.split('[INVENTÁRIO E SETUP]');
-            // Formata o checklist cortando a quebra de linha de forma elegante
             checklistFormatado = partes[1].replace(/\n✅/g, '<br><span style="color:green;">✅</span>')
                                           .replace(/\n❌/g, '<br><br><span style="color:red;">❌</span>')
                                           .replace(/\n/g, '<br>');
         }
     }
 
-    // Procura a formação para extrair o responsável e a data
     const formacao = acoesEscola.find(a => {
         const ag = getAgendamentoById(a.AgendamentoID || a.agendamentoID || a.agendamentoId);
         return ag && (ag.TipoEvento === 'Formação Inicial/Continuada' || ag.tipoEvento === 'Formação Inicial/Continuada');
     });
     const dataFormacao = formacao ? excelDateToDate(formacao.DataRegistro || formacao.Data) : "Pendente";
 
-    // Estrutura oficial do Termo de Aceite HTML
     const termoHTML = `
         <!DOCTYPE html><html><head><meta charset="utf-8"><title>Termo de Aceite - ${escola.NomeFantasia}</title>
         <style>
@@ -890,7 +1040,7 @@ document.getElementById('gerar-termo-pdf').addEventListener('click', () => {
         </div>
 
         <p style="text-align: justify; font-size: 15px;">
-            Pelo presente termo, a <strong>YXZ Robótica</strong> formaliza a entrega, montagem técnica e capacitação referente à implantação do espaço <em>ZMaker Lab</em> na instituição de ensino abaixo qualificada.
+            Pelo presente termo, a <strong>ZOOM Education for Life</strong> formaliza a entrega, montagem técnica e capacitação referente à implantação do espaço <em>ZMaker Lab</em> na instituição de ensino abaixo qualificada.
         </p>
 
         <div class="dados-escola">
@@ -923,7 +1073,7 @@ document.getElementById('gerar-termo-pdf').addEventListener('click', () => {
         <div class="assinaturas">
             <div class="assinatura-box">
                 <div class="linha"></div>
-                <strong>Responsável Técnico YXZ Robótica</strong><br>
+                <strong>Responsável Técnico ZOOM Education for Life</strong><br>
                 ZMaker Lab Implantação
             </div>
             <div class="assinatura-box">
