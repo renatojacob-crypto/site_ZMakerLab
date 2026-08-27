@@ -22,7 +22,7 @@ body {
     line-height: 1.6;
     
     /* Configurações do Background */
-    background-image: url('/images/fundo_ZML_site.png');
+    background-image: url('images/fundo_ZML_site.png');
     background-size: cover; /* Faz a imagem cobrir a tela inteira */
     background-position: center center; /* Centraliza a imagem */
     background-repeat: no-repeat; /* Evita que a imagem fique se repetindo como um mosaico */
