@@ -777,22 +777,73 @@ function calcularStatusEscola(escolaId) {
         return ag && (ag.TipoEvento || ag.tipoEvento) === 'Formação Inicial/Continuada';
     });
 
+    // NOVO: Verificação se o Termo de Entrega foi registrado
+    const termoOk = acoesEscola.some(a => {
+        const ag = getAgendamentoById(a.AgendamentoID || a.agendamentoID || a.agendamentoId);
+        return ag && (ag.TipoEvento || ag.tipoEvento) === 'Termo de Aceite/Entrega';
+    });
+
     let progresso = 10; 
     let statusAtual = "Aguardando Logística";
     let cor = "#3b82f6"; 
     
+    // Contagem dos 5 grandes marcos
     let marcos = 0;
     if (adesivacaoOk) marcos++;
     if (materialOk) marcos++;
     if (montagemOk) marcos++;
     if (formacaoOk) marcos++;
+    if (termoOk) marcos++;
 
-    if (marcos === 1) { progresso = 35; statusAtual = "Logística em Andamento"; }
-    if (marcos === 2) { progresso = 60; statusAtual = "Infra e Materiais Entregues"; }
-    if (marcos === 3) { progresso = 80; statusAtual = "Equipamentos Montados"; cor = "#f59e0b"; } 
-    if (marcos === 4) { progresso = 100; statusAtual = "ZMaker Lab Operando 🚀"; cor = "#10b981"; } 
+    if (marcos === 1) { progresso = 25; statusAtual = "Logística em Andamento"; }
+    if (marcos === 2) { progresso = 45; statusAtual = "Infra e Materiais Entregues"; }
+    if (marcos === 3) { progresso = 65; statusAtual = "Equipamentos Montados"; cor = "#f59e0b"; } 
+    if (marcos === 4) { progresso = 85; statusAtual = "Formação Realizada"; cor = "#10b981"; } 
+    if (marcos === 5) { progresso = 100; statusAtual = "Implantação Concluída 🚀"; cor = "#059669"; } 
 
-    return { progresso, statusAtual, cor, adesivacaoOk, materialOk, montagemOk, formacaoOk };
+    return { progresso, statusAtual, cor, adesivacaoOk, materialOk, montagemOk, formacaoOk, termoOk };
+}
+
+function renderProgressoImplantacao() {
+    const escolaFiltro = document.getElementById('dashboard-escola').value;
+    const container = document.getElementById('lista-progresso-escolas');
+    if(!container) return;
+
+    let escolasExibir = DB.escolas;
+    if (escolaFiltro) {
+        escolasExibir = DB.escolas.filter(e => String(e.ID) === String(escolaFiltro));
+    }
+
+    if (escolasExibir.length === 0) {
+        container.innerHTML = '<p>Nenhuma escola disponível.</p>';
+        return;
+    }
+
+    let html = '';
+    escolasExibir.forEach(e => {
+        const st = calcularStatusEscola(e.ID);
+        
+        html += `
+        <div class="progress-container">
+            <div class="progress-header">
+                <span>${e.NomeFantasia || e.RazaoSocial || 'Escola'}</span>
+                <span style="color: ${st.cor}; font-weight: bold;">${st.progresso}% - ${st.statusAtual}</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: ${st.progresso}%; background-color: ${st.cor};"></div>
+            </div>
+            <div class="progress-steps" style="font-size: 11px;">
+                <div class="progress-step completed">Cadastro</div>
+                <div class="progress-step ${st.adesivacaoOk ? 'completed' : ''}">Adesivação</div>
+                <div class="progress-step ${st.materialOk ? 'completed' : ''}">Materiais</div>
+                <div class="progress-step ${st.montagemOk ? 'completed' : ''}">Montagem</div>
+                <div class="progress-step ${st.formacaoOk ? 'completed' : ''}">Formação</div>
+                <div class="progress-step ${st.termoOk ? 'active-final' : ''}">Termo</div>
+            </div>
+        </div>
+        `;
+    });
+    container.innerHTML = html;
 }
 
 function renderProgressoImplantacao() {
