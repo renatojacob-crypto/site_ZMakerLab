@@ -12,7 +12,7 @@ function hideLoading() {
 
 // ====== FUNÇÃO PARA FAZER REQUISIÇÕES ======
 async function callAPI(url, method = 'GET', data = null) {
-    if (!url) return []; // Retorna vazio se a URL não estiver configurada no config.js
+    if (!url) return []; 
     
     const options = {
         method: method,
@@ -50,12 +50,14 @@ async function callAPI(url, method = 'GET', data = null) {
     }
 }
 
-// ====== FUNÇÕES DE CRUD (AGORA COM GERENTES E EQUIPE) ======
+// ====== FUNÇÕES DE CRUD ======
 async function getEscolas() { 
     const res = await callAPI(API.getEscolas, 'GET'); 
     return res.value || (Array.isArray(res) ? res : []); 
 }
 async function createEscola(dados) { return await callAPI(API.postEscola, 'POST', dados); }
+// NOVO: Função para atualizar a escola
+async function updateEscola(dados) { return await callAPI(API.putEscola, 'PUT', dados); }
 
 async function getAgendamentos() { 
     const res = await callAPI(API.getAgendamentos, 'GET'); 
@@ -77,7 +79,6 @@ async function getLogistica() {
 }
 async function createLogistica(dados) { return await callAPI(API.postLogistica, 'POST', dados); }
 
-// NOVOS CRUDS - GERENTES E EQUIPE
 async function getGerentes() { 
     const res = await callAPI(API.getGerentes, 'GET'); 
     return res.value || (Array.isArray(res) ? res : []); 
@@ -195,7 +196,6 @@ async function initData() {
         DB.acoes = (Array.isArray(acoes) ? acoes : []).map((a, i) => ({ ...a, ID: String(a.ID || a.id || i + 1).trim(), AgendamentoID: String(a.AgendamentoID || a.agendamentoID || '').trim(), EscolaID: String(a.EscolaID || a.escolaID || '').trim() }));
         DB.logistica = (Array.isArray(logistica) ? logistica : []).map(l => ({ ...l, EscolaID: String(l.EscolaID || l.escolaID || '').trim() }));
         
-        // Novos Arrays
         DB.gerentes = (Array.isArray(gerentes) ? gerentes : []).map((g, i) => ({ ...g, ID: String(g.ID || g.id || i + 1).trim() }));
         DB.equipe = (Array.isArray(equipe) ? equipe : []).map((eq, i) => ({ ...eq, ID: String(eq.ID || eq.id || i + 1).trim() }));
         
@@ -233,9 +233,12 @@ function getEscolasOptions() {
 function renderEscolas() {
     const container = document.getElementById('lista-escolas');
     if (!DB.escolas.length) { container.innerHTML = '<p>Nenhuma escola encontrada.</p>'; return; }
-    let html = `<table><thead><tr><th>Razão Social</th><th>Fantasia</th><th>Cidade/UF</th><th>ZMaker</th></tr></thead><tbody>`;
+    
+    // NOVO: Adicionada a coluna de Ação para o botão de edição
+    let html = `<table><thead><tr><th>Razão Social</th><th>Fantasia</th><th>Cidade/UF</th><th>ZMaker</th><th>Ação</th></tr></thead><tbody>`;
     DB.escolas.forEach(e => {
-        html += `<tr><td>${e.RazaoSocial || ''}</td><td>${e.NomeFantasia || ''}</td><td>${e.Cidade || ''}/${e.UF || ''}</td><td>${e.TipoZMaker || ''}</td></tr>`;
+        let btnEdit = `<button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="iniciarEdicaoEscola('${e.ID}')">✏️ Editar</button>`;
+        html += `<tr><td>${e.RazaoSocial || e.razao || ''}</td><td>${e.NomeFantasia || e.fantasia || ''}</td><td>${e.Cidade || e.cidade || ''}/${e.UF || e.uf || ''}</td><td>${e.TipoZMaker || e.tipoZmaker || ''}</td><td>${btnEdit}</td></tr>`;
     });
     container.innerHTML = html + '</tbody></table>';
 }
@@ -316,7 +319,7 @@ function renderPainelLogistica() {
         else if(adesivacao.includes('Andamento')) badgeAdes = `<span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #fef9c3; color: #854d0e;">${adesivacao}</span>`;
 
         html += `<tr>
-            <td style="font-weight: bold; color:#0f3b5e;">${e.NomeFantasia || 'Sem Nome'}</td>
+            <td style="font-weight: bold; color:#0f3b5e;">${e.NomeFantasia || e.fantasia || 'Sem Nome'}</td>
             <td>${tensao}</td>
             <td>${faseada}</td>
             <td>${badgeMat}</td>
@@ -328,7 +331,7 @@ function renderPainelLogistica() {
     container.innerHTML = html + '</tbody></table>';
 }
 
-// ====== EVENTOS DE AUTO-PREENCHIMENTO (AGORA BASEADO NO BANCO DE DADOS) ======
+// ====== EVENTOS DE AUTO-PREENCHIMENTO ======
 document.addEventListener('DOMContentLoaded', () => {
     
     // Auto-preenchimento do Responsável Técnico (Equipe)
@@ -342,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Auto-preenchimento do e-mail da Gerente quando selecionada na lista
+    // Auto-preenchimento do e-mail da Gerente quando selecionada no Agendamento
     const selGerenteAgend = document.getElementById('agendamento-gerente');
     if(selGerenteAgend) {
         selGerenteAgend.addEventListener('change', (e) => {
@@ -351,26 +354,144 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Auto-selecionar a Gerente automaticamente ao escolher a Escola
-    const selEscolaAgend = document.getElementById('agendamento-escola');
-    if(selEscolaAgend) {
-        selEscolaAgend.addEventListener('change', (e) => {
-            const escolaId = e.target.value;
-            const escola = getEscolaById(escolaId);
+    // NOVO: Lógica de Autocompletar e Cascata da Escola usando Datalist
+    const buscaInput = document.getElementById('agendamento-escola-busca');
+    const hiddenInputEscola = document.getElementById('agendamento-escola');
+    
+    if(buscaInput && hiddenInputEscola) {
+        buscaInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            // O datalist injeta o ID no formato: "Nome da Escola (ID: 12345)"
+            const match = val.match(/\(ID:\s*(.+)\)$/);
             
-            const dropdownGerente = document.getElementById('agendamento-gerente');
-            if (escola && (escola.GerenteID || escola.gerenteID)) {
-                dropdownGerente.value = String(escola.GerenteID || escola.gerenteID);
+            if (match) {
+                const escolaId = match[1].trim();
+                hiddenInputEscola.value = escolaId;
+                
+                // Dispara o auto-preenchimento da Gerente
+                const escola = getEscolaById(escolaId);
+                const dropdownGerente = document.getElementById('agendamento-gerente');
+                if (escola && (escola.GerenteID || escola.gerenteID)) {
+                    dropdownGerente.value = String(escola.GerenteID || escola.gerenteID);
+                } else {
+                    dropdownGerente.value = '';
+                }
+                if (dropdownGerente) dropdownGerente.dispatchEvent(new Event('change'));
+                
             } else {
-                dropdownGerente.value = '';
+                // Se apagou ou não encontrou a string perfeita, limpa o ID oculto
+                hiddenInputEscola.value = '';
             }
-            // Força a atualização da caixinha de e-mail disparando o evento de mudança
-            if (dropdownGerente) dropdownGerente.dispatchEvent(new Event('change'));
         });
     }
-}); // AQUI estava faltando o fechamento da função!
+});
 
-// ====== NOVOS FORMULÁRIOS: GERENTE E EQUIPE ======
+// ====== FUNÇÃO PARA INICIAR EDIÇÃO DE ESCOLA ======
+window.iniciarEdicaoEscola = function(id) {
+    const escola = getEscolaById(id);
+    if (!escola) return;
+
+    // Preenche os campos do formulário
+    document.getElementById('escola-id').value = escola.ID;
+    document.getElementById('escola-cnpj').value = escola.CNPJ || escola.cnpj || '';
+    document.getElementById('escola-razao').value = escola.RazaoSocial || escola.razao || '';
+    document.getElementById('escola-fantasia').value = escola.NomeFantasia || escola.fantasia || '';
+    document.getElementById('escola-cep').value = escola.CEP || escola.cep || '';
+    document.getElementById('escola-endereco').value = escola.Endereco || escola.endereco || '';
+    document.getElementById('escola-complemento').value = escola.Complemento || escola.complemento || '';
+    document.getElementById('escola-bairro').value = escola.Bairro || escola.bairro || '';
+    document.getElementById('escola-cidade').value = escola.Cidade || escola.cidade || '';
+    document.getElementById('escola-uf').value = escola.UF || escola.uf || '';
+    document.getElementById('escola-tipo-zmaker').value = escola.TipoZMaker || escola.tipoZmaker || '';
+    document.getElementById('escola-origem').value = escola.Origem || escola.origem || '';
+    document.getElementById('escola-bonificacao').value = escola.Bonificacao || escola.bonificacao || '';
+    document.getElementById('escola-gerente').value = escola.GerenteID || escola.gerenteID || '';
+    document.getElementById('escola-contato-nome').value = escola.ContatoNome || escola.contatoNome || '';
+    document.getElementById('escola-contato-cargo').value = escola.ContatoCargo || escola.contatoCargo || '';
+    document.getElementById('escola-contato-email').value = escola.ContatoEmail || escola.contatoEmail || '';
+    document.getElementById('escola-contato-telefone').value = escola.ContatoTelefone || escola.contatoTelefone || '';
+
+    // Ajusta a interface para o modo de edição
+    document.getElementById('titulo-form-escola').innerHTML = "✏️ Editando Escola: " + (escola.NomeFantasia || escola.fantasia);
+    document.getElementById('btn-salvar-escola').textContent = "Atualizar Escola";
+    document.getElementById('btn-cancelar-edicao').style.display = "inline-block";
+
+    // Rola suavemente para o topo do formulário
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// Evento de Cancelar a Edição da Escola
+document.getElementById('btn-cancelar-edicao').addEventListener('click', () => {
+    document.getElementById('form-escola').reset();
+    document.getElementById('escola-id').value = '';
+    document.getElementById('titulo-form-escola').innerHTML = "Cadastro de Escola";
+    document.getElementById('btn-salvar-escola').textContent = "Salvar Escola";
+    document.getElementById('btn-cancelar-edicao').style.display = "none";
+});
+
+// ====== FORMULÁRIO PRINCIPAL DE ESCOLAS (CRIA E EDITA) ======
+document.getElementById('form-escola').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const gerenteId = document.getElementById('escola-gerente').value;
+    const gerenteObj = DB.gerentes.find(g => g.ID === gerenteId);
+    
+    const dadosId = document.getElementById('escola-id').value; // Se tiver valor, é edição.
+    
+    const dados = {
+        cnpj: document.getElementById('escola-cnpj').value,
+        razao: document.getElementById('escola-razao').value,
+        fantasia: document.getElementById('escola-fantasia').value,
+        cep: document.getElementById('escola-cep').value.replace(/\D/g, ''),
+        endereco: document.getElementById('escola-endereco').value,
+        complemento: document.getElementById('escola-complemento').value,
+        bairro: document.getElementById('escola-bairro').value,
+        cidade: document.getElementById('escola-cidade').value,
+        uf: document.getElementById('escola-uf').value,
+        tipoZmaker: document.getElementById('escola-tipo-zmaker').value,
+        origem: document.getElementById('escola-origem').value,
+        bonificacao: document.getElementById('escola-bonificacao').value,
+        GerenteID: gerenteId,
+        GerenteNome: gerenteObj ? (gerenteObj.Nome || gerenteObj.nome) : '',
+        GerenteEmail: gerenteObj ? (gerenteObj.Email || gerenteObj.email) : '',
+        contatoNome: document.getElementById('escola-contato-nome').value,
+        contatoCargo: document.getElementById('escola-contato-cargo').value,
+        contatoEmail: document.getElementById('escola-contato-email').value,
+        contatoTelefone: document.getElementById('escola-contato-telefone').value
+    };
+    
+    showLoading(); 
+    try {
+        if (dadosId) {
+            // Fluxo de Atualização (Modo Edição)
+            dados.ID = dadosId;
+            await updateEscola(dados);
+            alert('Escola atualizada com sucesso!');
+        } else {
+            // Fluxo de Criação (Modo Nova)
+            await createEscola(dados);
+            alert('Escola salva com sucesso!');
+        }
+        
+        await new Promise(r => setTimeout(r, 2000));
+        await initData(); 
+        
+        // Reset da interface de edição para modo "Novo"
+        document.getElementById('form-escola').reset();
+        document.getElementById('escola-id').value = '';
+        document.getElementById('titulo-form-escola').innerHTML = "Cadastro de Escola";
+        document.getElementById('btn-salvar-escola').textContent = "Salvar Escola";
+        document.getElementById('btn-cancelar-edicao').style.display = "none";
+        
+    } catch (error) { 
+        alert('Erro ao salvar comunicação com o servidor.'); 
+    } finally { 
+        hideLoading(); 
+    }
+});
+
+
+// ====== OUTROS FORMULÁRIOS ======
 document.getElementById('form-gerente').addEventListener('submit', async (e) => {
     e.preventDefault();
     const dados = {
@@ -406,7 +527,6 @@ document.getElementById('form-equipe').addEventListener('submit', async (e) => {
     } catch (error) { alert('Erro ao salvar responsável.'); } finally { hideLoading(); }
 });
 
-// ====== LÓGICA DO FORMULÁRIO DE LOGÍSTICA ======
 document.getElementById('logistica-escola').addEventListener('change', function() {
     const escolaId = this.value;
     const form = document.getElementById('form-logistica');
@@ -461,47 +581,16 @@ document.getElementById('form-logistica').addEventListener('submit', async (e) =
     } finally { hideLoading(); }
 });
 
-// ====== FORMULÁRIOS RESTANTES ======
-document.getElementById('form-escola').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const gerenteId = document.getElementById('escola-gerente').value;
-    const gerenteObj = DB.gerentes.find(g => g.ID === gerenteId);
-    
-    const dados = {
-        cnpj: document.getElementById('escola-cnpj').value,
-        razao: document.getElementById('escola-razao').value,
-        fantasia: document.getElementById('escola-fantasia').value,
-        cep: document.getElementById('escola-cep').value.replace(/\D/g, ''),
-        endereco: document.getElementById('escola-endereco').value,
-        complemento: document.getElementById('escola-complemento').value,
-        bairro: document.getElementById('escola-bairro').value,
-        cidade: document.getElementById('escola-cidade').value,
-        uf: document.getElementById('escola-uf').value,
-        tipoZmaker: document.getElementById('escola-tipo-zmaker').value,
-        origem: document.getElementById('escola-origem').value,
-        bonificacao: document.getElementById('escola-bonificacao').value,
-        GerenteID: gerenteId,
-        GerenteNome: gerenteObj ? (gerenteObj.Nome || gerenteObj.nome) : '',
-        GerenteEmail: gerenteObj ? (gerenteObj.Email || gerenteObj.email) : '',
-        contatoNome: document.getElementById('escola-contato-nome').value,
-        contatoCargo: document.getElementById('escola-contato-cargo').value,
-        contatoEmail: document.getElementById('escola-contato-email').value,
-        contatoTelefone: document.getElementById('escola-contato-telefone').value
-    };
-    showLoading(); 
-    try {
-        await createEscola(dados);
-        await new Promise(r => setTimeout(r, 2000));
-        await initData(); 
-        document.getElementById('form-escola').reset();
-        alert('Escola salva com sucesso!');
-    } catch (error) { alert('Erro ao salvar.'); } finally { hideLoading(); }
-});
-
 document.getElementById('form-agendamento').addEventListener('submit', async (e) => {
     e.preventDefault();
+    // Puxando do campo invisível que é alimentado pela caixa de busca inteligente
     const escolaIdValue = document.getElementById('agendamento-escola').value;
+    
+    if (!escolaIdValue) {
+        alert("Por favor, selecione uma escola válida na lista de busca.");
+        return;
+    }
+
     const rawData = document.getElementById('agendamento-data').value; 
     const rawHora = document.getElementById('agendamento-hora').value; 
     
@@ -520,7 +609,7 @@ document.getElementById('form-agendamento').addEventListener('submit', async (e)
         ContatoCargo: document.getElementById('agendamento-contato-cargo').value,
         ContatoEmail: document.getElementById('agendamento-contato-email').value,
         ContatoTelefone: document.getElementById('agendamento-contato-telefone').value,
-        EmailEscola: escola ? escola.ContatoEmail : '',
+        EmailEscola: escola ? (escola.ContatoEmail || escola.contatoEmail) : '',
         EmailGerente: document.getElementById('agendamento-email-gerente').value
     };
     
@@ -530,6 +619,7 @@ document.getElementById('form-agendamento').addEventListener('submit', async (e)
         await new Promise(r => setTimeout(r, 2000));
         await initData(); 
         document.getElementById('form-agendamento').reset();
+        document.getElementById('agendamento-escola').value = ''; // Limpa o ID Oculto
         alert('Agendamento criado e e-mails enviados para fila!');
     } catch (error) { alert('Erro ao salvar o agendamento.'); } finally { hideLoading(); }
 });
@@ -607,9 +697,9 @@ document.getElementById('form-acao').addEventListener('submit', async (e) => {
     } catch (error) { alert('Erro ao registrar a ação.'); } finally { hideLoading(); }
 });
 
-// ====== ATUALIZAR SELECTS ======
+// ====== ATUALIZAR SELECTS E DATALISTS ======
 function atualizarSelects() {
-    const selects = ['agendamento-escola', 'dashboard-escola', 'relatorio-escola', 'logistica-escola', 'filtro-gerencial-escola', 'termo-escola'];
+    const selects = ['dashboard-escola', 'relatorio-escola', 'logistica-escola', 'filtro-gerencial-escola', 'termo-escola'];
     selects.forEach(id => {
         const sel = document.getElementById(id);
         if (sel) {
@@ -621,7 +711,16 @@ function atualizarSelects() {
         }
     });
 
-    // Puxa as gerentes cadastradas no DB
+    // NOVO: Popula o Datalist Inteligente de Agendamentos
+    const datalistAgendamento = document.getElementById('datalist-escolas');
+    if (datalistAgendamento) {
+        datalistAgendamento.innerHTML = '';
+        DB.escolas.forEach(e => {
+            // Insere o nome visível e no final um código (ID) oculto para a máquina ler
+            datalistAgendamento.innerHTML += `<option value="${e.NomeFantasia || e.RazaoSocial} - ${e.Cidade} (ID: ${e.ID})"></option>`;
+        });
+    }
+
     const selGerente = document.getElementById('escola-gerente');
     if (selGerente) {
         const currentVal = selGerente.value;
@@ -632,7 +731,6 @@ function atualizarSelects() {
         if (currentVal) selGerente.value = currentVal;
     }
 
-    // Puxa as gerentes para a aba de Agendamentos
     const selGerenteAgend = document.getElementById('agendamento-gerente');
     if (selGerenteAgend) {
         const currentVal = selGerenteAgend.value;
@@ -643,7 +741,6 @@ function atualizarSelects() {
         if (currentVal) selGerenteAgend.value = currentVal;
     }
 
-    // Puxa a equipe cadastrada no DB
     const selResp = document.getElementById('agendamento-responsavel');
     if (selResp) {
         const currentVal = selResp.value;
@@ -777,7 +874,6 @@ function calcularStatusEscola(escolaId) {
         return ag && (ag.TipoEvento || ag.tipoEvento) === 'Formação Inicial/Continuada';
     });
 
-    // NOVO: Verificação se o Termo de Entrega foi registrado
     const termoOk = acoesEscola.some(a => {
         const ag = getAgendamentoById(a.AgendamentoID || a.agendamentoID || a.agendamentoId);
         return ag && (ag.TipoEvento || ag.tipoEvento) === 'Termo de Aceite/Entrega';
@@ -787,7 +883,6 @@ function calcularStatusEscola(escolaId) {
     let statusAtual = "Aguardando Logística";
     let cor = "#3b82f6"; 
     
-    // Contagem dos 5 grandes marcos
     let marcos = 0;
     if (adesivacaoOk) marcos++;
     if (materialOk) marcos++;
@@ -839,47 +934,6 @@ function renderProgressoImplantacao() {
                 <div class="progress-step ${st.montagemOk ? 'completed' : ''}">Montagem</div>
                 <div class="progress-step ${st.formacaoOk ? 'completed' : ''}">Formação</div>
                 <div class="progress-step ${st.termoOk ? 'active-final' : ''}">Termo</div>
-            </div>
-        </div>
-        `;
-    });
-    container.innerHTML = html;
-}
-
-function renderProgressoImplantacao() {
-    const escolaFiltro = document.getElementById('dashboard-escola').value;
-    const container = document.getElementById('lista-progresso-escolas');
-    if(!container) return;
-
-    let escolasExibir = DB.escolas;
-    if (escolaFiltro) {
-        escolasExibir = DB.escolas.filter(e => String(e.ID) === String(escolaFiltro));
-    }
-
-    if (escolasExibir.length === 0) {
-        container.innerHTML = '<p>Nenhuma escola disponível.</p>';
-        return;
-    }
-
-    let html = '';
-    escolasExibir.forEach(e => {
-        const st = calcularStatusEscola(e.ID);
-        
-        html += `
-        <div class="progress-container">
-            <div class="progress-header">
-                <span>${e.NomeFantasia || e.RazaoSocial || 'Escola'}</span>
-                <span style="color: ${st.cor};">${st.progresso}% - ${st.statusAtual}</span>
-            </div>
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill" style="width: ${st.progresso}%; background-color: ${st.cor};"></div>
-            </div>
-            <div class="progress-steps">
-                <div class="progress-step completed">Cadastro</div>
-                <div class="progress-step ${st.adesivacaoOk ? 'completed' : ''}">Adesivação</div>
-                <div class="progress-step ${st.materialOk ? 'completed' : ''}">Materiais</div>
-                <div class="progress-step ${st.montagemOk ? 'completed' : ''}">Montagem</div>
-                <div class="progress-step ${st.formacaoOk ? 'active-final' : ''}">Operação</div>
             </div>
         </div>
         `;
@@ -1031,7 +1085,7 @@ function iniciarMapaGoogle() {
     window.mapaGoogleIniciado = true;
 }
 
-// ====== NOVO: GERAR TERMO DE ACEITE (ATUALIZADO PARA ZOOM) ======
+// ====== NOVO: GERAR TERMO DE ACEITE ======
 document.getElementById('gerar-termo-pdf').addEventListener('click', () => {
     const escolaId = document.getElementById('termo-escola').value;
     if (!escolaId) { alert('Por favor, selecione uma escola.'); return; }
@@ -1187,6 +1241,53 @@ document.getElementById('gerar-relatorio').addEventListener('click', () => {
 
     const janela = window.open('', '_blank'); janela.document.write(relatorioHTML); janela.document.close();
 });
+
+// ====== SISTEMA DE LOGIN (FRONT DOOR) ======
+const SENHA_EQUIPE = "Zmaker2026"; // <-- Troque por uma senha da sua escolha
+
+document.addEventListener('DOMContentLoaded', () => {
+    const loginScreen = document.getElementById('login-screen');
+    const mainApp = document.getElementById('main-app');
+    const formLogin = document.getElementById('form-login');
+    const erroLogin = document.getElementById('login-erro');
+    const btnSair = document.getElementById('btn-sair');
+
+    // Verifica se já está logado na sessão atual
+    if (sessionStorage.getItem('zmaker_auth') === 'true') {
+        liberarAcesso();
+    }
+
+    // Evento de tentativa de Login
+    formLogin.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const senhaDigitada = document.getElementById('senha-acesso').value;
+
+        if (senhaDigitada === SENHA_EQUIPE) {
+            sessionStorage.setItem('zmaker_auth', 'true');
+            liberarAcesso();
+        } else {
+            erroLogin.style.display = 'block';
+            document.getElementById('senha-acesso').value = '';
+        }
+    });
+
+    // Evento de Logout (Sair)
+    if (btnSair) {
+        btnSair.addEventListener('click', () => {
+            sessionStorage.removeItem('zmaker_auth');
+            mainApp.style.display = 'none';
+            loginScreen.style.display = 'flex';
+            document.getElementById('senha-acesso').value = '';
+            erroLogin.style.display = 'none';
+        });
+    }
+
+    function liberarAcesso() {
+        loginScreen.style.display = 'none';
+        mainApp.style.display = 'block';
+    }
+});
+
 
 // ====== INICIALIZAÇÃO FINAL ======
 initData();

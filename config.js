@@ -40,7 +40,10 @@ const API_CONFIG = {
     getEquipe: "https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/05/workflows/6ccab32599a14a399b705668c8324670/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=M-7yAwvQ97klTiCZ_-q8OAhZzjxtQY2Ak3UDIpirtg8",
 
     // Cria Equipe
-    postEquipe: "https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/20/workflows/21e14bb7e4404a48be00e959593b0179/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=0JarmAc-OqA0t19gTqdTiuvnUeBWmoeOOio0LvYybjw"
+    postEquipe: "https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/20/workflows/21e14bb7e4404a48be00e959593b0179/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=0JarmAc-OqA0t19gTqdTiuvnUeBWmoeOOio0LvYybjw",
+
+    //Editar Escola
+    putEscola: "https://defaultf916220e9d9a444a9c2bddd8cd5534.b2.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/ff938f9bc9534d6fbf064ea64c1ef14b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=S1XUkO_RmynGTKOlpggzaF1Ou63a6tMWoIrRE1hrpgA"
 
 };
 

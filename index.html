@@ -9,19 +9,40 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
-
+    <!-- Overlay de Loading (Mantém igual) -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner-large"></div>
         <p>Sincronizando dados...</p>
     </div>
 
-    <div class="app-container">
+    <!-- NOVA TELA DE LOGIN -->
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <img src="images/logozmaker.png" alt="ZMaker Logo" style="max-height: 60px; margin-bottom: 20px;">
+            <h2>Acesso Restrito</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Digite a senha da equipe para acessar o sistema.</p>
+            <form id="form-login">
+                <input type="password" id="senha-acesso" placeholder="Senha" required style="width: 100%; margin-bottom: 15px;">
+                <button type="submit" class="btn-primary" style="width: 100%;">Entrar</button>
+            </form>
+            <p id="login-erro" style="color: #ea4335; font-size: 13px; margin-top: 10px; display: none;">Senha incorreta. Tente novamente.</p>
+        </div>
+    </div>
+
+    <!-- APLICAÇÃO PRINCIPAL (Agora começa escondida e tem o botão Sair) -->
+    <div class="app-container" id="main-app" style="display: none;">
         <header>
-            <h1>💻 ZMaker Manager</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h1>🚀 ZMaker Manager</h1>
+                <!-- NOVO BOTÃO DE SAIR -->
+                <button id="btn-sair" class="btn-secondary" style="background-color: #ea4335; color: white; padding: 5px 15px; font-size: 12px;">Sair / Bloquear</button>
+            </div>
+            <nav>
+               <!-- Seus botões de navegação continuam aqui... -->
             <nav>
                 <button class="nav-btn active" data-tab="escolas">🏫 Escolas</button>
-                <button class="nav-btn" data-tab="gerentes">👩‍💼 Gerentes</button> <!-- NOVO -->
-                <button class="nav-btn" data-tab="equipe">👷 Equipe</button> <!-- NOVO -->
+                <button class="nav-btn" data-tab="gerentes">👩‍💼 Gerentes</button>
+                <button class="nav-btn" data-tab="equipe">👷 Equipe</button>
                 <button class="nav-btn" data-tab="agendamentos">📅 Agendamentos</button>
                 <button class="nav-btn" data-tab="logistica">📦 Logística</button>
                 <button class="nav-btn" data-tab="acoes">📝 Ações</button>
@@ -33,7 +54,7 @@
         </header>
 
         <main>
-            <!-- ABA: GERENTES (NOVA) -->
+            <!-- ABA: GERENTES -->
             <section id="tab-gerentes" class="tab-content">
                 <div class="card">
                     <h2>Cadastro de Gerente Educacional</h2>
@@ -52,7 +73,7 @@
                 </div>
             </section>
 
-            <!-- ABA: EQUIPE TÉCNICA (NOVA) -->
+            <!-- ABA: EQUIPE TÉCNICA -->
             <section id="tab-equipe" class="tab-content">
                 <div class="card">
                     <h2>Cadastro de Responsável / Equipe</h2>
@@ -64,7 +85,7 @@
                             <select id="equipe-cargo" required>
                                 <option value="">Selecione o Cargo...</option>
                                 <option value="Orientador">Orientador</option>
-                                <option value="Técnico de Implantação">Equipe ZMaker Lab</option>
+                                <option value="Técnico de Implantação">Técnico de Implantação</option>
                                 <option value="Comercial">Comercial</option>
                                 <option value="Coordenação">Coordenação</option>
                             </select>
@@ -81,8 +102,11 @@
             <!-- Aba ESCOLAS -->
             <section id="tab-escolas" class="tab-content active">
                 <div class="card">
-                    <h2>Cadastro de Escola</h2>
+                    <h2 id="titulo-form-escola">Cadastro de Escola</h2>
                     <form id="form-escola">
+                        <!-- Campo oculto para guardar o ID durante a edição -->
+                        <input type="hidden" id="escola-id">
+                        
                         <div class="form-grid">
                             <input type="text" id="escola-cnpj" placeholder="CNPJ" required>
                             <input type="text" id="escola-razao" placeholder="Razão Social" required>
@@ -116,7 +140,6 @@
                                 <option value="Venda">Venda</option>
                             </select>
 
-                            <!-- Seleção Dinâmica da Gerente -->
                             <select id="escola-gerente" required>
                                 <option value="">Carregando Gerentes...</option>
                             </select>
@@ -126,7 +149,10 @@
                             <input type="email" id="escola-contato-email" placeholder="E-mail do Contato">
                             <input type="tel" id="escola-contato-telefone" placeholder="Telefone">
                         </div>
-                        <button type="submit" class="btn-primary">Salvar Escola</button>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button type="submit" id="btn-salvar-escola" class="btn-primary">Salvar Escola</button>
+                            <button type="button" id="btn-cancelar-edicao" class="btn-secondary" style="display: none; background-color: #64748b; color: white;">Cancelar Edição</button>
+                        </div>
                     </form>
                 </div>
                 <div class="card">
@@ -141,20 +167,30 @@
                     <h2>Novo Agendamento</h2>
                     <form id="form-agendamento">
                         <div class="form-grid">
-                            <select id="agendamento-escola" required></select>
+                            
+                            <!-- NOVO: Sistema de busca inteligente para Escolas -->
+                            <div style="grid-column: 1 / -1;">
+                                <label for="agendamento-escola-busca" style="font-size: 0.85rem; color: #666; margin-bottom: 5px; display: block;">Buscar e Selecionar Escola:</label>
+                                <input type="text" id="agendamento-escola-busca" list="datalist-escolas" placeholder="Digite o nome da escola para buscar..." required autocomplete="off" style="width: 100%;">
+                                <datalist id="datalist-escolas"></datalist>
+                                <!-- Campo invisível que segura o ID real da escola selecionada para mandar pro banco -->
+                                <input type="hidden" id="agendamento-escola" required>
+                            </div>
+
                             <select id="agendamento-tipo-evento" required>
-                                <option value="">Selecione o Tipo...</option>
+                                <option value="">Tipo de Evento</option>
                                 <option value="Montagem de Equipamentos">Montagem de Equipamentos</option>
-                                <option value="Formação Inicial">Formação Inicial</option>
+                                <option value="Formação Inicial/Continuada">Formação Inicial/Continuada</option>
                                 <option value="Reunião Pedagógica">Reunião Pedagógica</option>
                                 <option value="Reunião de Alinhamento">Reunião de Alinhamento</option>
-                                <!-- NOVA OPÇÃO ABAIXO -->
+                                <option value="Reunião de Manutenção">Reunião de Manutenção</option>
                                 <option value="Termo de Aceite/Entrega">Termo de Aceite/Entrega</option>
+                                <option value="Outro">Outro</option>
                             </select>
+                            
                             <input type="date" id="agendamento-data" required>
                             <input type="time" id="agendamento-hora" required>
                             
-                            <!-- Seleção Dinâmica da Equipe -->
                             <select id="agendamento-responsavel" required>
                                 <option value="">Carregando Responsáveis...</option>
                             </select>
@@ -162,12 +198,10 @@
                             <input type="email" id="agendamento-resp-email" placeholder="E-mail do Responsável" readonly required>
                             <input type="tel" id="agendamento-resp-telefone" placeholder="Telefone do Responsável" readonly required>
                             
-                            <!-- Campos da Gerente -->
                             <select id="agendamento-gerente" required>
                                 <option value="">Carregando Gerentes...</option>
                             </select>
                             <input type="email" id="agendamento-email-gerente" placeholder="E-mail do(a) Gerente" readonly required>
-                            
                             
                             <input type="text" id="agendamento-contato-nome" placeholder="Nome do Contato (opcional)">
                             <input type="text" id="agendamento-contato-cargo" placeholder="Cargo (opcional)">
@@ -441,8 +475,8 @@
         </main>
     </div>
 
-    <script src="config.js?v=2.0"></script>
-    <script src="app.js?v=2.0"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
     <!-- Script do Google Maps -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBP1yTdfWgs4BHnViN8N_H516fx492xF1I"></script>
 </body>
